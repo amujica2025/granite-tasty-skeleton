@@ -1,4 +1,20 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+# granite_tasty_fix_default_viewport_full.ps1
+$ErrorActionPreference = "Stop"
+
+$projectRoot = "C:\Users\alexm\granite_tasty_skeleton"
+$appFile = Join-Path $projectRoot "frontend\src\App.tsx"
+
+if (-not (Test-Path $projectRoot)) {
+    throw "Project root not found: $projectRoot"
+}
+
+if (Test-Path $appFile) {
+    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    Copy-Item $appFile "$appFile.bak_$timestamp" -Force
+}
+
+$appContent = @'
+import { useEffect, useMemo, useRef, useState } from 'react';
 import PositionsPanel from './components/PositionsPanel';
 
 type LayoutState = 'default' | 'sides_bundle' | 'outer_plus_positions';
@@ -212,14 +228,14 @@ export default function App() {
 
   const kpiCards = useMemo(
     () => [
-      { label: 'Net Liq', value: netLiq !== null ? `$${netLiq.toLocaleString()}` : 'â€”', tone: '#22c55e' },
-      { label: 'BP', value: bp !== null ? `$${bp.toLocaleString()}` : 'â€”', tone: '#60a5fa' },
+      { label: 'Net Liq', value: netLiq !== null ? `$${netLiq.toLocaleString()}` : '—', tone: '#22c55e' },
+      { label: 'BP', value: bp !== null ? `$${bp.toLocaleString()}` : '—', tone: '#60a5fa' },
       {
         label: '25x',
         value:
           netLiq !== null
             ? `$${(netLiq * 25).toLocaleString(undefined, { maximumFractionDigits: 2 })}`
-            : 'â€”',
+            : '—',
         tone: '#f59e0b',
       },
       { label: 'Longs', value: '$1,155', tone: '#d4d4d4' },
@@ -432,3 +448,12 @@ export default function App() {
   );
 }
 
+'@
+
+Set-Content -Path $appFile -Value $appContent -Encoding UTF8
+
+Write-Host ""
+Write-Host "Applied full App.tsx replacement with default viewport centering fix." -ForegroundColor Green
+Write-Host ""
+Write-Host "Run next:" -ForegroundColor Yellow
+Write-Host "cd C:\Users\alexm\granite_tasty_skeleton\frontend; npm run build" -ForegroundColor White

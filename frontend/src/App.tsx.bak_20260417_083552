@@ -1,0 +1,532 @@
+﻿import { useEffect, useMemo, useState } from 'react';
+import PositionsPanel from './components/PositionsPanel';
+
+type LayoutState = 'default' | 'positionsExpanded' | 'sidesExpanded';
+
+type WatchlistRow = {
+  symbol: string;
+  latest: number;
+  pctChange: number;
+  relStr14d: number;
+  ivPctl: number;
+  ivHv: number;
+  impVol: number;
+  iv5d: number;
+  iv1m: number;
+  iv3m: number;
+  iv6m: number;
+  bbPct: number;
+  bbRank: number;
+  ttmSqueeze: string;
+  adr14d: number;
+  optionsVol: number;
+  totalVol1m: number;
+  callVol: number;
+  putVol: number;
+};
+
+type TickerCard = {
+  symbol: string;
+  last: number;
+  chgPct: number;
+};
+
+type GridArea = {
+  colStart: number;
+  colEnd: number;
+  rowStart: number;
+  rowEnd: number;
+};
+
+type LayoutMap = {
+  watchlist: GridArea;
+  infoHub: GridArea;
+  positions: GridArea;
+  scanners: GridArea;
+};
+
+const layouts: Record<LayoutState, LayoutMap> = {
+  default: {
+    watchlist: { colStart: 1, colEnd: 2, rowStart: 1, rowEnd: 7 },
+    infoHub: { colStart: 2, colEnd: 6, rowStart: 1, rowEnd: 4 },
+    positions: { colStart: 2, colEnd: 6, rowStart: 4, rowEnd: 7 },
+    scanners: { colStart: 6, colEnd: 7, rowStart: 1, rowEnd: 7 },
+  },
+  positionsExpanded: {
+    watchlist: { colStart: 1, colEnd: 2, rowStart: 1, rowEnd: 7 },
+    infoHub: { colStart: 2, colEnd: 6, rowStart: 1, rowEnd: 2 },
+    positions: { colStart: 2, colEnd: 6, rowStart: 2, rowEnd: 7 },
+    scanners: { colStart: 6, colEnd: 7, rowStart: 1, rowEnd: 7 },
+  },
+  sidesExpanded: {
+    watchlist: { colStart: 1, colEnd: 3, rowStart: 1, rowEnd: 7 },
+    infoHub: { colStart: 3, colEnd: 5, rowStart: 1, rowEnd: 4 },
+    positions: { colStart: 3, colEnd: 5, rowStart: 4, rowEnd: 7 },
+    scanners: { colStart: 5, colEnd: 7, rowStart: 1, rowEnd: 7 },
+  },
+};
+
+const watchlistSeed: WatchlistRow[] = [
+  { symbol: 'SPY', latest: 513.24, pctChange: 0.42, relStr14d: 57.1, ivPctl: 31.0, ivHv: 1.08, impVol: 15.4, iv5d: 14.6, iv1m: 15.2, iv3m: 16.4, iv6m: 17.1, bbPct: 62.0, bbRank: 58.0, ttmSqueeze: 'Off', adr14d: 7.2, optionsVol: 2450000, totalVol1m: 19400000, callVol: 1290000, putVol: 1160000 },
+  { symbol: 'QQQ', latest: 441.82, pctChange: -0.21, relStr14d: 49.2, ivPctl: 34.0, ivHv: 1.11, impVol: 18.2, iv5d: 17.9, iv1m: 18.0, iv3m: 19.5, iv6m: 20.3, bbPct: 48.0, bbRank: 44.0, ttmSqueeze: 'On', adr14d: 8.8, optionsVol: 1840000, totalVol1m: 13800000, callVol: 910000, putVol: 930000 },
+  { symbol: 'IWM', latest: 201.64, pctChange: 0.66, relStr14d: 61.2, ivPctl: 43.0, ivHv: 1.22, impVol: 22.4, iv5d: 21.8, iv1m: 22.2, iv3m: 24.0, iv6m: 25.6, bbPct: 68.0, bbRank: 65.0, ttmSqueeze: 'Off', adr14d: 4.9, optionsVol: 621000, totalVol1m: 4550000, callVol: 308000, putVol: 313000 },
+  { symbol: 'TSLA', latest: 172.31, pctChange: 1.81, relStr14d: 72.4, ivPctl: 68.0, ivHv: 1.36, impVol: 48.5, iv5d: 45.0, iv1m: 46.8, iv3m: 50.9, iv6m: 55.1, bbPct: 77.0, bbRank: 74.0, ttmSqueeze: 'Off', adr14d: 9.1, optionsVol: 1310000, totalVol1m: 11300000, callVol: 690000, putVol: 620000 },
+  { symbol: 'NVDA', latest: 880.44, pctChange: 2.26, relStr14d: 78.5, ivPctl: 64.0, ivHv: 1.19, impVol: 41.7, iv5d: 40.2, iv1m: 41.1, iv3m: 43.9, iv6m: 46.2, bbPct: 82.0, bbRank: 79.0, ttmSqueeze: 'Off', adr14d: 28.2, optionsVol: 2100000, totalVol1m: 16200000, callVol: 1180000, putVol: 920000 },
+  { symbol: 'SPX', latest: 5208.43, pctChange: 0.17, relStr14d: 54.8, ivPctl: 27.0, ivHv: 1.02, impVol: 14.7, iv5d: 13.9, iv1m: 14.4, iv3m: 15.8, iv6m: 16.9, bbPct: 51.0, bbRank: 49.0, ttmSqueeze: 'On', adr14d: 61.0, optionsVol: 0, totalVol1m: 0, callVol: 0, putVol: 0 },
+];
+
+const tickerSeed: TickerCard[] = [
+  { symbol: 'SPY', last: 513.24, chgPct: 0.42 },
+  { symbol: 'AAPL', last: 189.81, chgPct: 0.71 },
+  { symbol: 'QQQ', last: 441.82, chgPct: -0.21 },
+  { symbol: 'TSLA', last: 172.31, chgPct: 1.81 },
+  { symbol: 'NVDA', last: 880.44, chgPct: 2.26 },
+  { symbol: 'SPX', last: 5208.43, chgPct: 0.17 },
+  { symbol: 'VIX', last: 15.83, chgPct: -2.05 },
+];
+
+const formatCompact = (value: number) =>
+  Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+
+const heatColor = (value: number, min: number, max: number) => {
+  const range = max - min || 1;
+  const ratio = Math.max(0, Math.min(1, (value - min) / range));
+  const alpha = 0.10 + ratio * 0.38;
+  return `rgba(245, 158, 11, ${alpha.toFixed(3)})`;
+};
+
+const panelStyle: React.CSSProperties = {
+  background: '#0b0b0b',
+  border: '1px solid #202020',
+  overflow: 'hidden',
+  minWidth: 0,
+  minHeight: 0,
+};
+
+function areaStyle(area: GridArea): React.CSSProperties {
+  return {
+    gridColumn: `${area.colStart} / ${area.colEnd}`,
+    gridRow: `${area.rowStart} / ${area.rowEnd}`,
+  };
+}
+
+export default function App() {
+  const [layoutState, setLayoutState] = useState<LayoutState>('default');
+  const [netLiq, setNetLiq] = useState<number | null>(null);
+  const [bp, setBp] = useState<number | null>(null);
+  const [watchlistRows, setWatchlistRows] = useState<WatchlistRow[]>(watchlistSeed);
+  const [tickers, setTickers] = useState<TickerCard[]>(tickerSeed);
+
+  useEffect(() => {
+    const fetchBalances = async () => {
+      try {
+        const res = await fetch('http://localhost:8000/api/balances');
+        const data = await res.json();
+
+        if (data.balances && data.balances.length > 0) {
+          const row = data.balances[0];
+          setNetLiq(row.net_liquidating_value ?? null);
+          setBp(
+            row.option_buying_power ??
+              row.derivatives_buying_power ??
+              row.buying_power ??
+              row.cash_available_to_trade ??
+              null
+          );
+        }
+      } catch (e) {
+        console.error('Failed to fetch balances:', e);
+      }
+    };
+
+    fetchBalances();
+    const interval = setInterval(fetchBalances, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8000/ws/market');
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'RawFeed' && msg.data && msg.data.type === 'FEED_DATA') {
+          const feed = msg.data.data;
+          if (feed[0] === 'Quote') {
+            const values = feed[1];
+            const map: Record<string, { bid?: number; ask?: number }> = {};
+
+            for (let i = 0; i < values.length; i += 5) {
+              map[values[i]] = { bid: values[i + 1], ask: values[i + 2] };
+            }
+
+            const nextMid = (symbol: string, fallback: number) => {
+              const q = map[symbol];
+              if (!q || typeof q.bid !== 'number' || typeof q.ask !== 'number') return fallback;
+              const mid = (q.bid + q.ask) / 2;
+              return Number.isFinite(mid) ? Number(mid.toFixed(2)) : fallback;
+            };
+
+            setWatchlistRows((prev) =>
+              prev.map((row) => ({ ...row, latest: nextMid(row.symbol, row.latest) }))
+            );
+
+            setTickers((prev) =>
+              prev.map((row) => ({ ...row, last: nextMid(row.symbol, row.last) }))
+            );
+          }
+        }
+      } catch (e) {
+        console.log('Quote parse error');
+      }
+    };
+
+    return () => ws.close();
+  }, []);
+
+  const kpiCards = useMemo(
+    () => [
+      { label: 'Net Liq', value: netLiq !== null ? `$${netLiq.toLocaleString()}` : 'â€”', tone: '#22c55e' },
+      { label: 'BP', value: bp !== null ? `$${bp.toLocaleString()}` : 'â€”', tone: '#60a5fa' },
+      {
+        label: '25x',
+        value:
+          netLiq !== null
+            ? `$${(netLiq * 25).toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+            : 'â€”',
+        tone: '#f59e0b',
+      },
+      { label: 'Longs', value: '$1,155', tone: '#d4d4d4' },
+      { label: 'Shorts', value: '$7,955', tone: '#d4d4d4' },
+    ],
+    [bp, netLiq]
+  );
+
+  const layout = layouts[layoutState];
+  const collapsedWatchlist = layoutState !== 'sidesExpanded';
+
+  return (
+    <div
+      style={{
+        background: '#050505',
+        color: '#ffffff',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        fontFamily: 'system-ui, sans-serif',
+      }}
+    >
+      <div
+        style={{
+          height: '100%',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(6, 1fr)',
+          gridTemplateRows: 'repeat(6, 1fr)',
+          position: 'relative',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 2000,
+            display: 'flex',
+            gap: 6,
+          }}
+        >
+          <button
+            onClick={() => setLayoutState('default')}
+            style={{
+              border: '1px solid #333',
+              background: layoutState === 'default' ? '#222' : '#0b0b0b',
+              color: '#ddd',
+              padding: '6px 10px',
+              cursor: 'pointer',
+            }}
+          >
+            Default
+          </button>
+          <button
+            onClick={() => setLayoutState('positionsExpanded')}
+            style={{
+              border: '1px solid #333',
+              background: layoutState === 'positionsExpanded' ? '#222' : '#0b0b0b',
+              color: '#ddd',
+              padding: '6px 10px',
+              cursor: 'pointer',
+            }}
+          >
+            Positions Expanded
+          </button>
+          <button
+            onClick={() => setLayoutState('sidesExpanded')}
+            style={{
+              border: '1px solid #333',
+              background: layoutState === 'sidesExpanded' ? '#222' : '#0b0b0b',
+              color: '#ddd',
+              padding: '6px 10px',
+              cursor: 'pointer',
+            }}
+          >
+            Sides Expanded
+          </button>
+        </div>
+
+        <div style={{ ...panelStyle, ...areaStyle(layout.watchlist) }}>
+          <div
+            style={{
+              height: 38,
+              borderBottom: '1px solid #242424',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 10px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#e5e5e5',
+            }}
+          >
+            weeklys
+          </div>
+
+          <div style={{ height: 'calc(100% - 38px)', overflow: 'auto' }}>
+            {collapsedWatchlist ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                {['Symbol', 'Last', '%Chg', 'IV Pctl'].map((label) => (
+                  <div
+                    key={label}
+                    style={{
+                      padding: '8px 6px',
+                      fontSize: '10px',
+                      color: '#9a9a9a',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #1f1f1f',
+                      borderRight: '1px solid #1d1d1d',
+                    }}
+                  >
+                    {label}
+                  </div>
+                ))}
+
+                {watchlistRows.flatMap((row) => [
+                  <div key={`${row.symbol}-s`} style={{ padding: '8px 6px', fontSize: '11px', fontWeight: 700, borderBottom: '1px solid #1f1f1f' }}>{row.symbol}</div>,
+                  <div key={`${row.symbol}-l`} style={{ padding: '8px 6px', fontSize: '11px', borderBottom: '1px solid #1f1f1f' }}>{row.latest.toFixed(2)}</div>,
+                  <div key={`${row.symbol}-p`} style={{ padding: '8px 6px', fontSize: '11px', color: row.pctChange >= 0 ? '#22c55e' : '#ef4444', borderBottom: '1px solid #1f1f1f' }}>
+                    {row.pctChange >= 0 ? '+' : ''}{row.pctChange.toFixed(2)}%
+                  </div>,
+                  <div key={`${row.symbol}-i`} style={{ padding: '8px 6px', fontSize: '11px', color: '#f59e0b', borderBottom: '1px solid #1f1f1f' }}>{row.ivPctl.toFixed(0)}</div>,
+                ])}
+              </div>
+            ) : (
+              <div style={{ minWidth: 980 }}>
+                <div
+                  style={{
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 5,
+                    background: '#111111',
+                    borderBottom: '1px solid #333',
+                    display: 'grid',
+                    gridTemplateColumns:
+                      '88px 84px 84px 88px 76px 72px 78px 72px 72px 72px 72px 64px 76px 98px 84px 96px 108px 96px 96px',
+                    fontSize: '10px',
+                    color: '#9a9a9a',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {[
+                    'Symbol',
+                    'Latest',
+                    '%Change',
+                    '14D Rel Str',
+                    'IV Pctl',
+                    'IV/HV',
+                    'Imp Vol',
+                    '5D IV',
+                    '1M IV',
+                    '3M IV',
+                    '6M IV',
+                    'BB%',
+                    'BB Rank',
+                    'TTM Squeeze',
+                    '14D ADR',
+                    'Options Vol',
+                    '1M Total Vol',
+                    'Call Vol',
+                    'Put Vol',
+                  ].map((col) => (
+                    <div key={col} style={{ padding: '8px 6px', borderRight: '1px solid #1d1d1d' }}>
+                      {col}
+                    </div>
+                  ))}
+                </div>
+
+                {watchlistRows.map((row) => {
+                  const termMin = Math.min(row.impVol, row.iv5d, row.iv1m, row.iv3m, row.iv6m);
+                  const termMax = Math.max(row.impVol, row.iv5d, row.iv1m, row.iv3m, row.iv6m);
+
+                  return (
+                    <div
+                      key={row.symbol}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns:
+                          '88px 84px 84px 88px 76px 72px 78px 72px 72px 72px 72px 64px 76px 98px 84px 96px 108px 96px 96px',
+                        borderBottom: '1px solid #1f1f1f',
+                        fontSize: '11px',
+                      }}
+                    >
+                      <div style={{ padding: '8px 6px', fontWeight: 700 }}>{row.symbol}</div>
+                      <div style={{ padding: '8px 6px' }}>{row.latest.toFixed(2)}</div>
+                      <div style={{ padding: '8px 6px', color: row.pctChange >= 0 ? '#22c55e' : '#ef4444' }}>
+                        {row.pctChange >= 0 ? '+' : ''}{row.pctChange.toFixed(2)}%
+                      </div>
+                      <div style={{ padding: '8px 6px' }}>{row.relStr14d.toFixed(1)}</div>
+                      <div style={{ padding: '8px 6px', color: '#f59e0b' }}>{row.ivPctl.toFixed(0)}</div>
+                      <div style={{ padding: '8px 6px' }}>{row.ivHv.toFixed(2)}</div>
+                      <div style={{ padding: '8px 6px', background: heatColor(row.impVol, termMin, termMax) }}>{row.impVol.toFixed(1)}</div>
+                      <div style={{ padding: '8px 6px', background: heatColor(row.iv5d, termMin, termMax) }}>{row.iv5d.toFixed(1)}</div>
+                      <div style={{ padding: '8px 6px', background: heatColor(row.iv1m, termMin, termMax) }}>{row.iv1m.toFixed(1)}</div>
+                      <div style={{ padding: '8px 6px', background: heatColor(row.iv3m, termMin, termMax) }}>{row.iv3m.toFixed(1)}</div>
+                      <div style={{ padding: '8px 6px', background: heatColor(row.iv6m, termMin, termMax) }}>{row.iv6m.toFixed(1)}</div>
+                      <div style={{ padding: '8px 6px' }}>{row.bbPct.toFixed(0)}</div>
+                      <div style={{ padding: '8px 6px' }}>{row.bbRank.toFixed(0)}</div>
+                      <div style={{ padding: '8px 6px' }}>{row.ttmSqueeze}</div>
+                      <div style={{ padding: '8px 6px' }}>{row.adr14d.toFixed(1)}</div>
+                      <div style={{ padding: '8px 6px' }}>{formatCompact(row.optionsVol)}</div>
+                      <div style={{ padding: '8px 6px' }}>{formatCompact(row.totalVol1m)}</div>
+                      <div style={{ padding: '8px 6px' }}>{formatCompact(row.callVol)}</div>
+                      <div style={{ padding: '8px 6px' }}>{formatCompact(row.putVol)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ ...panelStyle, ...areaStyle(layout.infoHub) }}>
+          <div
+            style={{
+              height: 30,
+              borderBottom: '1px solid #242424',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+              color: '#8f8f8f',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}
+          >
+            Info Hub
+          </div>
+
+          <div
+            style={{
+              height: 'calc(100% - 30px)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              padding: '8px 10px',
+            }}
+          >
+            <div
+              style={{
+                display: 'inline-flex',
+                gap: 10,
+                animation: 'scrollCards 28s linear infinite',
+                width: 'max-content',
+              }}
+            >
+              {kpiCards.concat(kpiCards).map((card, i) => (
+                <div
+                  key={`${card.label}-${i}`}
+                  style={{
+                    width: 160,
+                    minWidth: 160,
+                    height: 70,
+                    background: '#0b0b0b',
+                    border: '1px solid #262626',
+                    padding: 8,
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ fontSize: 10, color: '#8f8f8f', textTransform: 'uppercase' }}>{card.label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: card.tone }}>{card.value}</div>
+                  <div style={{ height: 16, border: '1px solid #1e1e1e', background: '#080808' }} />
+                </div>
+              ))}
+
+              {tickers.concat(tickers).map((card, i) => (
+                <div
+                  key={`${card.symbol}-${i}`}
+                  style={{
+                    width: 160,
+                    minWidth: 160,
+                    height: 70,
+                    background: '#0b0b0b',
+                    border: '1px solid #262626',
+                    padding: 8,
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10 }}>
+                    <span style={{ fontWeight: 700 }}>{card.symbol}</span>
+                    <span style={{ color: card.chgPct >= 0 ? '#22c55e' : '#ef4444' }}>
+                      {card.chgPct >= 0 ? '+' : ''}{card.chgPct.toFixed(2)}%
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700 }}>{card.last.toFixed(2)}</div>
+                  <div style={{ height: 16, border: '1px solid #1e1e1e', background: '#080808', overflow: 'hidden' }}>
+                    <svg viewBox="0 0 120 16" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
+                      <polyline fill="none" stroke="#22c55e" strokeWidth="1.5" points="0,12 10,10 20,11 30,8 40,9 50,7 60,6 70,7 80,4 90,5 100,3 110,4 120,2" />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ ...panelStyle, ...areaStyle(layout.positions) }}>
+          <PositionsPanel netLiq={netLiq} />
+        </div>
+
+        <div style={{ ...panelStyle, ...areaStyle(layout.scanners) }}>
+          <div
+            style={{
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 20,
+              fontWeight: 700,
+              color: '#d4af37',
+            }}
+          >
+            SCANNERS
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes scrollCards {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
