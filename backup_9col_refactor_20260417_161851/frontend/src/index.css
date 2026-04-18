@@ -1,0 +1,428 @@
+﻿:root {
+  color-scheme: dark;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #bfbfbf;
+  color: #111;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #bfbfbf;
+}
+
+body {
+  min-width: 0;
+}
+
+button {
+  font: inherit;
+}
+
+.gt-app-shell {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #bfbfbf;
+}
+
+.gt-topbar {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 8px 0 10px;
+  border-top: 1px solid #694b4b;
+  border-bottom: 1px solid #8c7878;
+  background: #dedede;
+  color: #111;
+  font-size: 10px;
+}
+
+.gt-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.gt-brand strong {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.gt-brand span {
+  color: #4d4d4d;
+}
+
+.gt-preset-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.gt-preset {
+  border: 1px solid #444;
+  background: #efefef;
+  color: #111;
+  border-radius: 3px;
+  padding: 2px 7px;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.gt-preset.active {
+  background: #111;
+  color: #fff;
+}
+
+.gt-world-viewport {
+  width: 100vw;
+  height: calc(100vh - 32px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #bfbfbf;
+  scrollbar-width: auto;
+}
+
+.gt-world {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 10px 0 8px;
+}
+
+.gt-sheet {
+  width: 100%;
+  min-height: 820px;
+  display: flex;
+  align-items: stretch;
+}
+
+.gt-grid {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 28px repeat(6, 1fr) 58px;
+  border-top: 1px solid #3f3f3f;
+  border-left: 1px solid #3f3f3f;
+  position: relative;
+}
+
+.gt-grid > * {
+  border-right: 1px solid #8b8b8b;
+  border-bottom: 1px solid #8b8b8b;
+}
+
+.gt-col-label,
+.gt-row-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #111;
+  background: rgba(255,255,255,0.05);
+}
+
+.gt-col-label {
+  font-weight: 600;
+  position: relative;
+}
+
+.gt-col-label.overlay-c {
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  width: 33.33%;
+  margin-left: 33.33%;
+  pointer-events: none;
+  background: transparent;
+}
+
+.gt-col-label.overlay-d {
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  width: 33.33%;
+  margin-left: 49.8%;
+  pointer-events: none;
+  background: transparent;
+}
+
+.gt-col-label.overlay-e {
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  width: 33.33%;
+  margin-left: 66.4%;
+  pointer-events: none;
+  background: transparent;
+}
+
+.gt-row-label.left,
+.gt-row-label.right {
+  background: transparent;
+  font-size: 12px;
+}
+
+.gt-panel {
+  padding: 10px 12px;
+  overflow: hidden;
+}
+
+.gt-panel-title {
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 4px;
+  color: #111;
+}
+
+.gt-panel-sub {
+  font-size: 19px;
+  text-align: center;
+  margin-top: 4px;
+  color: #222;
+}
+
+.gt-dark-title {
+  font-size: 28px;
+}
+
+.gt-dark-sub {
+  font-size: 19px;
+}
+
+.gt-panel.neg-b,
+.gt-panel.pos-b {
+  background: transparent;
+}
+
+.gt-panel.outer-left {
+  background: linear-gradient(180deg, #fd18fa 0%, #d60ad7 100%);
+}
+
+.gt-panel.watchlist {
+  background: #1dff00;
+}
+
+.gt-panel.info-hub {
+  background: #ff2618;
+}
+
+.gt-panel.positions {
+  background: #4d84da;
+  padding-top: 6px;
+}
+
+.gt-panel.scanners {
+  background: #e1ca68;
+}
+
+.gt-panel.outer-right {
+  background: #2fc8d3;
+}
+
+.gt-watchlist-table {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr 0.8fr;
+  gap: 4px 8px;
+  font-size: 12px;
+  color: #0b0b0b;
+}
+
+.gt-watchlist-table .head {
+  font-weight: 700;
+}
+
+.gt-info-title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #111;
+  margin: 4px 0 10px;
+}
+
+.gt-ticker-cards {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gt-card,
+.gt-kpi,
+.gt-scan-box {
+  background: rgba(255, 120, 90, 0.48);
+  border: 1px solid rgba(160, 40, 24, 0.35);
+}
+
+.gt-card {
+  min-height: 92px;
+  padding: 12px 10px 8px;
+}
+
+.gt-card-sym {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gt-card-price {
+  font-size: 30px;
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.gt-card-change {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.gt-kpi-row {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gt-kpi {
+  min-height: 68px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.gt-kpi span {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.gt-kpi strong {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.gt-position-window {
+  margin-top: 10px;
+  height: calc(100% - 54px);
+  background: #030609;
+  color: #d2e9ff;
+  border: 1px solid #3761a8;
+  padding: 8px 10px 2px;
+  overflow: hidden;
+}
+
+.gt-position-head,
+.gt-position-row {
+  display: grid;
+  grid-template-columns: 2.7fr 0.5fr 0.7fr 0.7fr 0.7fr 0.8fr 0.8fr 0.8fr 0.7fr 0.7fr;
+  gap: 8px;
+  font-size: 10px;
+}
+
+.gt-position-head {
+  color: #93b9ff;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #173968;
+}
+
+.gt-position-row {
+  padding: 7px 0;
+  color: #9fc1f1;
+  border-bottom: 1px solid rgba(40, 81, 140, 0.28);
+}
+
+.gt-position-row span:nth-child(7) {
+  color: #ff8c63;
+}
+
+.gt-position-row span:nth-child(8) {
+  color: #ff6b58;
+}
+
+.gt-position-row span:nth-child(9) {
+  color: #93ff79;
+}
+
+.gt-position-row span:nth-child(10) {
+  color: #8ecfff;
+}
+
+.gt-position-scrollbar {
+  height: 12px;
+  margin-top: 14px;
+  background: #9f9f9f;
+  position: relative;
+}
+
+.gt-position-scrollthumb {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  height: 8px;
+  width: 38%;
+  background: #4f4f4f;
+}
+
+.gt-scan-box {
+  margin-top: 22px;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: rgba(245, 225, 149, 0.58);
+}
+
+.gt-default-bar-wrap {
+  background: transparent;
+  border-right: none !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 0 0;
+}
+
+.gt-default-bar {
+  height: 10px;
+  background: #2aaa41;
+  border-radius: 0;
+}
+
+.gt-default-bar-label {
+  text-align: center;
+  font-size: 11px;
+  color: #8baa4b;
+  margin-top: 6px;
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 1600px) {
+  .gt-panel-title {
+    font-size: 20px;
+  }
+
+  .gt-panel-sub {
+    font-size: 16px;
+  }
+
+  .gt-card-price,
+  .gt-kpi strong {
+    font-size: 24px;
+  }
+}

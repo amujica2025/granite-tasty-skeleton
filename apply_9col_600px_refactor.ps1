@@ -1,4 +1,29 @@
-﻿import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+param()
+
+$ErrorActionPreference = "Stop"
+
+$root = Get-Location
+$frontend = Join-Path $root "frontend"
+$src = Join-Path $frontend "src"
+
+if (-not (Test-Path $frontend)) {
+    throw "Run this from the repo root that contains the frontend folder."
+}
+
+$backupRoot = Join-Path $root ("backup_9col_refactor_" + (Get-Date -Format "yyyyMMdd_HHmmss"))
+New-Item -ItemType Directory -Force -Path $backupRoot | Out-Null
+
+foreach ($rel in @("frontend\src\App.tsx", "frontend\src\index.css")) {
+    $full = Join-Path $root $rel
+    if (Test-Path $full) {
+        $dest = Join-Path $backupRoot $rel
+        New-Item -ItemType Directory -Force -Path (Split-Path $dest -Parent) | Out-Null
+        Copy-Item $full $dest -Force
+    }
+}
+
+$appTsx = @'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 type LayoutState = "default" | "sides_bundle" | "outer_plus_positions";
 
@@ -20,43 +45,41 @@ type LayoutConfig = {
   newPanel2: Area;
 };
 
-const COL_WIDTH = 500;
-const TOTAL_COLS = 10;
-const SHEET_HEIGHT = 930;
+const COL_WIDTH = 600;
+const TOTAL_COLS = 9;
+const SHEET_HEIGHT = 940;
 
 const layouts: Record<LayoutState, LayoutConfig> = {
   default: {
     viewStartCol: 2,
     viewEndCol: 9,
-    newPanel:   { colStart: 2, colSpan: 1, rowStart: 1, rowSpan: 6 },
-    watchlist:  { colStart: 3, colSpan: 1, rowStart: 1, rowSpan: 6 },
-    infoHub:    { colStart: 4, colSpan: 4, rowStart: 1, rowSpan: 2 },
-    positions:  { colStart: 4, colSpan: 4, rowStart: 3, rowSpan: 4 },
-    scanners:   { colStart: 8, colSpan: 1, rowStart: 1, rowSpan: 6 },
-    newPanel2:  { colStart: 9, colSpan: 1, rowStart: 1, rowSpan: 6 },
+    newPanel: { colStart: 2, colSpan: 1, rowStart: 2, rowSpan: 6 },
+    watchlist: { colStart: 3, colSpan: 1, rowStart: 2, rowSpan: 6 },
+    infoHub: { colStart: 4, colSpan: 3, rowStart: 2, rowSpan: 3 },
+    positions: { colStart: 4, colSpan: 3, rowStart: 5, rowSpan: 3 },
+    scanners: { colStart: 7, colSpan: 1, rowStart: 2, rowSpan: 6 },
+    newPanel2: { colStart: 8, colSpan: 1, rowStart: 2, rowSpan: 6 },
   },
-
   sides_bundle: {
     viewStartCol: 1,
     viewEndCol: 10,
-    newPanel:   { colStart: 1, colSpan: 2, rowStart: 1, rowSpan: 6 },
-    watchlist:  { colStart: 3, colSpan: 2, rowStart: 1, rowSpan: 6 },
-    infoHub:    { colStart: 4, colSpan: 4, rowStart: 1, rowSpan: 2 },
-    positions:  { colStart: 4, colSpan: 4, rowStart: 3, rowSpan: 4 },
-    scanners:   { colStart: 7, colSpan: 2, rowStart: 1, rowSpan: 6 },
-    newPanel2:  { colStart: 9, colSpan: 2, rowStart: 1, rowSpan: 6 },
+    newPanel: { colStart: 1, colSpan: 2, rowStart: 2, rowSpan: 6 },
+    watchlist: { colStart: 3, colSpan: 2, rowStart: 2, rowSpan: 6 },
+    infoHub: { colStart: 5, colSpan: 1, rowStart: 2, rowSpan: 3 },
+    positions: { colStart: 5, colSpan: 1, rowStart: 5, rowSpan: 3 },
+    scanners: { colStart: 6, colSpan: 2, rowStart: 2, rowSpan: 6 },
+    newPanel2: { colStart: 8, colSpan: 2, rowStart: 2, rowSpan: 6 },
   },
-
   outer_plus_positions: {
     viewStartCol: 1,
     viewEndCol: 10,
-    newPanel:   { colStart: 1, colSpan: 2, rowStart: 1, rowSpan: 6 },
-    watchlist:  { colStart: 3, colSpan: 1, rowStart: 1, rowSpan: 6 },
-    infoHub:    { colStart: 4, colSpan: 4, rowStart: 1, rowSpan: 1 },
-    positions:  { colStart: 4, colSpan: 4, rowStart: 2, rowSpan: 5 },
-    scanners:   { colStart: 8, colSpan: 1, rowStart: 1, rowSpan: 6 },
-    newPanel2:  { colStart: 9, colSpan: 2, rowStart: 1, rowSpan: 6 },
-  }
+    newPanel: { colStart: 1, colSpan: 2, rowStart: 2, rowSpan: 6 },
+    watchlist: { colStart: 3, colSpan: 1, rowStart: 2, rowSpan: 6 },
+    infoHub: { colStart: 4, colSpan: 3, rowStart: 2, rowSpan: 2 },
+    positions: { colStart: 4, colSpan: 3, rowStart: 4, rowSpan: 4 },
+    scanners: { colStart: 7, colSpan: 1, rowStart: 2, rowSpan: 6 },
+    newPanel2: { colStart: 8, colSpan: 2, rowStart: 2, rowSpan: 6 },
+  },
 };
 
 const tickers = [
@@ -180,7 +203,7 @@ export default function App() {
               <div className="gt-panel-sub">{layoutState === "default" ? "Collapsed" : "Expanded"}</div>
             </div>
 
-            <div className="gt-panel gt-green" style={{ ...areaStyle(layout.watchlist), zIndex: layoutState === "sides_bundle" ? 30 : 1 }}>
+            <div className="gt-panel gt-green" style={areaStyle(layout.watchlist)}>
               <div className="gt-panel-title">Watchlist</div>
               <div className="gt-panel-sub">{layoutState === "sides_bundle" ? "Expanded" : "Collapsed"}</div>
               <div className="gt-watchlist-grid">
@@ -199,7 +222,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="gt-panel gt-red" style={{ ...areaStyle(layout.infoHub), zIndex: 5 }}>
+            <div className="gt-panel gt-red" style={areaStyle(layout.infoHub)}>
               <div className="gt-hub-title">Info Hub</div>
               <div className="gt-cards">
                 {tickers.map((t) => (
@@ -211,13 +234,13 @@ export default function App() {
                 ))}
               </div>
               <div className="gt-kpis">
-                <div className="gt-kpi"><span>Net Liq</span><strong>{netLiq === null ? "â€”" : `$${netLiq.toLocaleString()}`}</strong></div>
-                <div className="gt-kpi"><span>25x</span><strong>{netLiq === null ? "â€”" : `$${(netLiq * 25).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}</strong></div>
+                <div className="gt-kpi"><span>Net Liq</span><strong>{netLiq === null ? "—" : `$${netLiq.toLocaleString()}`}</strong></div>
+                <div className="gt-kpi"><span>25x</span><strong>{netLiq === null ? "—" : `$${(netLiq * 25).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}</strong></div>
                 <div className="gt-kpi"><span>Mode</span><strong>{layoutState}</strong></div>
               </div>
             </div>
 
-            <div className="gt-panel gt-blue" style={{ ...areaStyle(layout.positions), zIndex: 5 }}>
+            <div className="gt-panel gt-blue" style={areaStyle(layout.positions)}>
               <div className="gt-panel-title">Positions Panel</div>
               <div className="gt-panel-sub">{layoutState === "outer_plus_positions" ? "Expanded" : "Collapsed"}</div>
               <div className="gt-positions-window">
@@ -232,7 +255,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="gt-panel gt-yellow" style={{ ...areaStyle(layout.scanners), zIndex: layoutState === "sides_bundle" ? 30 : 1 }}>
+            <div className="gt-panel gt-yellow" style={areaStyle(layout.scanners)}>
               <div className="gt-panel-title">Scanners</div>
               <div className="gt-panel-sub">{layoutState === "sides_bundle" ? "Expanded" : "Collapsed"}</div>
               <div className="gt-box">Entry Scanner</div>
@@ -250,8 +273,282 @@ export default function App() {
     </div>
   );
 }
+'@
 
+$indexCss = @'
+:root {
+  color-scheme: dark;
+  font-family: Arial, Helvetica, sans-serif;
+}
 
+* {
+  box-sizing: border-box;
+}
 
+html, body, #root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #bfbfbf;
+}
 
+.gt-shell {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #bfbfbf;
+}
 
+.gt-topbar {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 10px;
+  background: #d7d7d7;
+  border-bottom: 1px solid #8c8c8c;
+  color: #111;
+}
+
+.gt-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.gt-title strong {
+  font-size: 15px;
+}
+
+.gt-title span {
+  font-size: 11px;
+  color: #4a4a4a;
+}
+
+.gt-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.gt-controls button {
+  border: 1px solid #4a4a4a;
+  background: #f1f1f1;
+  color: #111;
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.gt-controls button.active {
+  background: #111;
+  color: #fff;
+}
+
+.gt-viewport {
+  width: 100vw;
+  height: calc(100vh - 36px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #bfbfbf;
+}
+
+.gt-world {
+  padding: 0;
+  margin: 0 auto;
+}
+
+.gt-grid {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(9, 600px);
+  grid-template-rows: 24px repeat(6, 150px) 16px;
+  border-top: 1px solid #575757;
+  border-left: 1px solid #575757;
+}
+
+.gt-grid > * {
+  border-right: 1px solid #8e8e8e;
+  border-bottom: 1px solid #8e8e8e;
+}
+
+.gt-col-label, .gt-row-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  font-size: 12px;
+  background: rgba(255,255,255,0.08);
+}
+
+.gt-row-label.left {
+  justify-content: flex-start;
+  padding-left: 8px;
+}
+
+.gt-panel {
+  overflow: hidden;
+  padding: 10px 12px;
+}
+
+.gt-empty {
+  background: transparent;
+}
+
+.gt-magenta { background: linear-gradient(180deg, #fd18fa 0%, #d60ad7 100%); }
+.gt-green { background: #1dff00; }
+.gt-red { background: #ff2618; }
+.gt-blue { background: #4d84da; }
+.gt-yellow { background: #e1ca68; }
+.gt-cyan { background: #2fc8d3; }
+
+.gt-panel-title {
+  text-align: center;
+  color: #111;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: 4px;
+}
+
+.gt-panel-sub {
+  text-align: center;
+  color: #222;
+  font-size: 19px;
+  margin-top: 4px;
+}
+
+.gt-watchlist-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr 0.8fr;
+  gap: 5px 8px;
+  color: #0b0b0b;
+  font-size: 12px;
+}
+
+.gt-watchlist-grid .head {
+  font-weight: 700;
+}
+
+.gt-hub-title {
+  text-align: center;
+  color: #111;
+  font-size: 34px;
+  font-weight: 700;
+  margin: 2px 0 10px;
+}
+
+.gt-cards {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gt-card {
+  min-height: 94px;
+  background: rgba(255, 120, 90, 0.48);
+  border: 1px solid rgba(160, 40, 24, 0.35);
+  padding: 10px;
+}
+
+.gt-card .sym {
+  font-size: 12px;
+  font-weight: 700;
+  color: #111;
+}
+
+.gt-card .last {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111;
+}
+
+.gt-kpis {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gt-kpi {
+  min-height: 70px;
+  background: rgba(255, 120, 90, 0.48);
+  border: 1px solid rgba(160, 40, 24, 0.35);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.gt-kpi span {
+  font-size: 11px;
+  font-weight: 700;
+  color: #111;
+}
+
+.gt-kpi strong {
+  font-size: 26px;
+  color: #111;
+}
+
+.gt-positions-window {
+  margin-top: 10px;
+  height: calc(100% - 54px);
+  background: #030609;
+  color: #d2e9ff;
+  border: 1px solid #3761a8;
+  padding: 8px 10px;
+  overflow: hidden;
+}
+
+.gt-position-head,
+.gt-position-row {
+  display: grid;
+  grid-template-columns: 2.7fr 0.5fr 0.7fr 0.7fr 0.7fr 0.8fr 0.8fr 0.8fr 0.7fr 0.7fr;
+  gap: 8px;
+  font-size: 10px;
+}
+
+.gt-position-head {
+  color: #93b9ff;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #173968;
+}
+
+.gt-position-row {
+  padding: 7px 0;
+  color: #9fc1f1;
+  border-bottom: 1px solid rgba(40, 81, 140, 0.28);
+}
+
+.gt-box {
+  margin-top: 22px;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #3b3212;
+  background: rgba(245, 225, 149, 0.58);
+  border: 1px solid rgba(100, 86, 34, 0.25);
+}
+
+.pos { color: #167f37; }
+.neg { color: #a52d2d; }
+'@
+
+Set-Content -Path (Join-Path $src "App.tsx") -Value $appTsx -Encoding UTF8
+Set-Content -Path (Join-Path $src "index.css") -Value $indexCss -Encoding UTF8
+
+Write-Host ""
+Write-Host "Applied 9-column / 600px span refactor."
+Write-Host "Backups saved to: $backupRoot"
+Write-Host ""
+Write-Host "Next:"
+Write-Host "  cd frontend"
+Write-Host "  npm run build"

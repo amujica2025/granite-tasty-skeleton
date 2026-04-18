@@ -1,0 +1,367 @@
+import { useEffect, useMemo, useState } from 'react';
+import PositionsPanel from './components/PositionsPanel';
+
+type LayoutState = 'default' | 'sides_bundle' | 'outer_plus_positions';
+
+type WatchlistRow = {
+  symbol: string;
+  latest: number;
+  pctChange: number;
+  ivPctl: number;
+};
+
+type TickerCard = {
+  symbol: string;
+  last: number;
+  chgPct: number;
+};
+
+type GridArea = {
+  colStart: number;
+  colEnd: number;
+  rowStart: number;
+  rowEnd: number;
+};
+
+type LayoutMap = {
+  newPanel: GridArea;
+  watchlist: GridArea;
+  infoHub: GridArea;
+  positions: GridArea;
+  scanners: GridArea;
+  newPanel2: GridArea;
+};
+
+const layouts: Record<LayoutState, LayoutMap> = {
+  default: {
+    newPanel: { colStart: 2, colEnd: 3, rowStart: 1, rowEnd: 7 },
+    watchlist: { colStart: 3, colEnd: 4, rowStart: 1, rowEnd: 7 },
+    infoHub: { colStart: 4, colEnd: 8, rowStart: 1, rowEnd: 4 },
+    positions: { colStart: 4, colEnd: 8, rowStart: 4, rowEnd: 7 },
+    scanners: { colStart: 8, colEnd: 9, rowStart: 1, rowEnd: 7 },
+    newPanel2: { colStart: 9, colEnd: 10, rowStart: 1, rowEnd: 7 },
+  },
+  sides_bundle: {
+    newPanel: { colStart: 1, colEnd: 3, rowStart: 1, rowEnd: 7 },
+    watchlist: { colStart: 3, colEnd: 5, rowStart: 1, rowEnd: 7 },
+    infoHub: { colStart: 5, colEnd: 7, rowStart: 1, rowEnd: 4 },
+    positions: { colStart: 5, colEnd: 7, rowStart: 4, rowEnd: 7 },
+    scanners: { colStart: 7, colEnd: 9, rowStart: 1, rowEnd: 7 },
+    newPanel2: { colStart: 9, colEnd: 11, rowStart: 1, rowEnd: 7 },
+  },
+  outer_plus_positions: {
+    newPanel: { colStart: 1, colEnd: 3, rowStart: 1, rowEnd: 7 },
+    watchlist: { colStart: 3, colEnd: 4, rowStart: 1, rowEnd: 7 },
+    infoHub: { colStart: 4, colEnd: 8, rowStart: 1, rowEnd: 2 },
+    positions: { colStart: 4, colEnd: 8, rowStart: 2, rowEnd: 7 },
+    scanners: { colStart: 8, colEnd: 9, rowStart: 1, rowEnd: 7 },
+    newPanel2: { colStart: 9, colEnd: 11, rowStart: 1, rowEnd: 7 },
+  },
+};
+
+const watchlistSeed: WatchlistRow[] = [
+  { symbol: 'SPY', latest: 513.24, pctChange: 0.42, ivPctl: 31 },
+  { symbol: 'QQQ', latest: 441.82, pctChange: -0.21, ivPctl: 34 },
+  { symbol: 'IWM', latest: 201.64, pctChange: 0.66, ivPctl: 43 },
+  { symbol: 'TSLA', latest: 172.31, pctChange: 1.81, ivPctl: 68 },
+  { symbol: 'NVDA', latest: 880.44, pctChange: 2.26, ivPctl: 64 },
+  { symbol: 'SPX', latest: 5208.43, pctChange: 0.17, ivPctl: 27 },
+];
+
+const tickerSeed: TickerCard[] = [
+  { symbol: 'SPY', last: 513.24, chgPct: 0.42 },
+  { symbol: 'AAPL', last: 189.81, chgPct: 0.71 },
+  { symbol: 'QQQ', last: 441.82, chgPct: -0.21 },
+  { symbol: 'TSLA', last: 172.31, chgPct: 1.81 },
+  { symbol: 'NVDA', last: 880.44, chgPct: 2.26 },
+  { symbol: 'SPX', last: 5208.43, chgPct: 0.17 },
+  { symbol: 'VIX', last: 15.83, chgPct: -2.05 },
+];
+
+const STORAGE_KEY = 'granite-layout-state';
+
+function areaStyle(area: GridArea): React.CSSProperties {
+  return {
+    gridColumn: `${area.colStart} / ${area.colEnd}`,
+    gridRow: `${area.rowStart} / ${area.rowEnd}`,
+  };
+}
+
+function fmtMoney(value: number | null): string {
+  if (value === null || Number.isNaN(value)) {
+    return 'â€”';
+  }
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function fmtPct(value: number): string {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+}
+
+export default function App() {
+  const [layoutState, setLayoutState] = useState<LayoutState>('default');
+  const [netLiq, setNetLiq] = useState<number | null>(null);
+  const [bp, setBp] = useState<number | null>(null);
+  const [watchlistRows, setWatchlistRows] = useState<WatchlistRow[]>(watchlistSeed);
+  const [tickers, setTickers] = useState<TickerCard[]>(tickerSeed);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(STORAGE_KEY) as LayoutState | null;
+    if (saved && (saved === 'default' || saved === 'sides_bundle' || saved === 'outer_plus_positions')) {
+      setLayoutState(saved);
+    } else {
+      window.localStorage.setItem(STORAGE_KEY, 'default');
+      setLayoutState('default');
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, layoutState);
+  }, [layoutState]);
+
+  useEffect(() => {
+    const fetchBalances = async () => {
+      try {
+        const res = await fetch('http://localhost:8000/api/balances');
+        if (!res.ok) {
+          return;
+        }
+        const data = await res.json();
+        if (data.balances && data.balances.length > 0) {
+          const row = data.balances[0];
+          setNetLiq(row.net_liquidating_value ?? null);
+          setBp(
+            row.option_buying_power ??
+            row.derivatives_buying_power ??
+            row.buying_power ??
+            row.cash_available_to_trade ??
+            null,
+          );
+        }
+      } catch {
+        // keep UI stable even if backend is down
+      }
+    };
+
+    fetchBalances();
+    const interval = window.setInterval(fetchBalances, 30000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8000/ws/market');
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type !== 'RawFeed' || !msg.data || msg.data.type !== 'FEED_DATA') {
+          return;
+        }
+
+        const feed = msg.data.data;
+        if (!Array.isArray(feed) || feed[0] !== 'Quote') {
+          return;
+        }
+
+        const values = feed[1];
+        const map: Record<string, { bid: number; ask: number }> = {};
+
+        for (let i = 0; i < values.length; i += 5) {
+          map[values[i]] = { bid: values[i + 1], ask: values[i + 2] };
+        }
+
+        const nextMid = (symbol: string, fallback: number) => {
+          const q = map[symbol];
+          if (!q || typeof q.bid !== 'number' || typeof q.ask !== 'number') {
+            return fallback;
+          }
+          const mid = (q.bid + q.ask) / 2;
+          return Number.isFinite(mid) ? Number(mid.toFixed(2)) : fallback;
+        };
+
+        setWatchlistRows((prev) => prev.map((row) => ({ ...row, latest: nextMid(row.symbol, row.latest) })));
+        setTickers((prev) => prev.map((row) => ({ ...row, last: nextMid(row.symbol, row.last) })));
+      } catch {
+        // ignore malformed websocket payloads
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
+  const layout = layouts[layoutState];
+  const watchlistExpanded = layoutState === 'sides_bundle';
+  const scannersExpanded = layoutState === 'sides_bundle';
+
+  const kpiCards = useMemo(
+    () => [
+      { label: 'Net Liq', value: fmtMoney(netLiq), tone: 'green' },
+      { label: 'BP', value: fmtMoney(bp), tone: 'blue' },
+      { label: '25x', value: netLiq !== null ? fmtMoney(netLiq * 25) : 'â€”', tone: 'amber' },
+      { label: 'Default', value: 'All Collapsed', tone: 'purple' },
+      { label: 'Preset', value: layoutState.replaceAll('_', ' '), tone: 'slate' },
+    ],
+    [bp, layoutState, netLiq],
+  );
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="topbar-left">
+          <div className="brand-block">
+            <div className="eyebrow">Granite Tasty Skeleton</div>
+            <div className="headline">Locked Default View</div>
+          </div>
+          <div className="preset-buttons">
+            <button
+              className={layoutState === 'default' ? 'preset-btn active' : 'preset-btn'}
+              onClick={() => setLayoutState('default')}
+            >
+              Default
+            </button>
+            <button
+              className={layoutState === 'sides_bundle' ? 'preset-btn active' : 'preset-btn'}
+              onClick={() => setLayoutState('sides_bundle')}
+            >
+              New Panels + Watchlist/Scanners
+            </button>
+            <button
+              className={layoutState === 'outer_plus_positions' ? 'preset-btn active' : 'preset-btn'}
+              onClick={() => setLayoutState('outer_plus_positions')}
+            >
+              New Panels + Positions
+            </button>
+          </div>
+        </div>
+
+        <div className="topbar-right">
+          <div className="balance-card">
+            <span className="balance-label">Net Liq</span>
+            <span className="balance-value">{fmtMoney(netLiq)}</span>
+          </div>
+          <div className="balance-card">
+            <span className="balance-label">Buying Power</span>
+            <span className="balance-value">{fmtMoney(bp)}</span>
+          </div>
+        </div>
+      </header>
+
+      <main className="workspace-frame">
+        <div className="workspace-grid">
+          <div className="column-label" style={{ gridColumn: '1 / 2', gridRow: '1 / 2' }}>-B</div>
+          <div className="column-label" style={{ gridColumn: '2 / 3', gridRow: '1 / 2' }}>-A</div>
+          <div className="column-label" style={{ gridColumn: '3 / 4', gridRow: '1 / 2' }}>A</div>
+          <div className="column-label" style={{ gridColumn: '4 / 5', gridRow: '1 / 2' }}>B</div>
+          <div className="column-label" style={{ gridColumn: '5 / 6', gridRow: '1 / 2' }}>C</div>
+          <div className="column-label" style={{ gridColumn: '6 / 7', gridRow: '1 / 2' }}>D</div>
+          <div className="column-label" style={{ gridColumn: '7 / 8', gridRow: '1 / 2' }}>E</div>
+          <div className="column-label" style={{ gridColumn: '8 / 9', gridRow: '1 / 2' }}>F</div>
+          <div className="column-label" style={{ gridColumn: '9 / 10', gridRow: '1 / 2' }}>+A</div>
+          <div className="column-label" style={{ gridColumn: '10 / 11', gridRow: '1 / 2' }}>+B</div>
+
+          <div className="row-label" style={{ gridColumn: '11 / 12', gridRow: '1 / 2' }}>1</div>
+          <div className="row-label" style={{ gridColumn: '11 / 12', gridRow: '2 / 3' }}>2</div>
+          <div className="row-label" style={{ gridColumn: '11 / 12', gridRow: '3 / 4' }}>3</div>
+          <div className="row-label" style={{ gridColumn: '11 / 12', gridRow: '4 / 5' }}>4</div>
+          <div className="row-label" style={{ gridColumn: '11 / 12', gridRow: '5 / 6' }}>5</div>
+          <div className="row-label" style={{ gridColumn: '11 / 12', gridRow: '6 / 7' }}>6</div>
+
+          <section className="panel panel-empty" style={{ gridColumn: '1 / 2', gridRow: '1 / 7' }} />
+          <section className="panel panel-empty" style={{ gridColumn: '10 / 11', gridRow: '1 / 7' }} />
+
+          <section className="panel panel-magenta" style={areaStyle(layout.newPanel)}>
+            <div className="panel-title">New Panel</div>
+            <div className="panel-subtitle">{layoutState === 'default' ? 'Collapsed' : 'Expanded'}</div>
+          </section>
+
+          <section className="panel panel-green" style={areaStyle(layout.watchlist)}>
+            <div className="panel-title">Watchlist</div>
+            <div className="panel-subtitle">{watchlistExpanded ? 'Expanded' : 'Collapsed'}</div>
+            <div className="watchlist-grid">
+              {!watchlistExpanded ? (
+                <>
+                  <div className="watch-h">Symbol</div>
+                  <div className="watch-h">Last</div>
+                  <div className="watch-h">%Chg</div>
+                  <div className="watch-h">IV Pctl</div>
+                  {watchlistRows.flatMap((row) => [
+                    <div key={`${row.symbol}-s`} className="watch-c">{row.symbol}</div>,
+                    <div key={`${row.symbol}-l`} className="watch-c">{row.latest.toFixed(2)}</div>,
+                    <div key={`${row.symbol}-p`} className={row.pctChange >= 0 ? 'watch-c up' : 'watch-c down'}>{fmtPct(row.pctChange)}</div>,
+                    <div key={`${row.symbol}-iv`} className="watch-c">{row.ivPctl.toFixed(0)}</div>,
+                  ])}
+                </>
+              ) : (
+                <>
+                  <div className="watch-h">Symbol</div>
+                  <div className="watch-h">Last</div>
+                  <div className="watch-h">%Chg</div>
+                  <div className="watch-h">IV Pctl</div>
+                  <div className="watch-h">State</div>
+                  {watchlistRows.flatMap((row) => [
+                    <div key={`${row.symbol}-s2`} className="watch-c">{row.symbol}</div>,
+                    <div key={`${row.symbol}-l2`} className="watch-c">{row.latest.toFixed(2)}</div>,
+                    <div key={`${row.symbol}-p2`} className={row.pctChange >= 0 ? 'watch-c up' : 'watch-c down'}>{fmtPct(row.pctChange)}</div>,
+                    <div key={`${row.symbol}-iv2`} className="watch-c">{row.ivPctl.toFixed(0)}</div>,
+                    <div key={`${row.symbol}-st2`} className="watch-c">Live</div>,
+                  ])}
+                </>
+              )}
+            </div>
+          </section>
+
+          <section className="panel panel-red" style={areaStyle(layout.infoHub)}>
+            <div className="panel-title">Info Hub</div>
+            <div className="ticker-strip">
+              {tickers.map((ticker) => (
+                <div key={ticker.symbol} className="ticker-card">
+                  <div className="ticker-symbol">{ticker.symbol}</div>
+                  <div className="ticker-last">{ticker.last.toFixed(2)}</div>
+                  <div className={ticker.chgPct >= 0 ? 'ticker-change up' : 'ticker-change down'}>{fmtPct(ticker.chgPct)}</div>
+                </div>
+              ))}
+            </div>
+            <div className="kpi-strip">
+              {kpiCards.map((card) => (
+                <div key={card.label} className={`kpi-card tone-${card.tone}`}>
+                  <div className="kpi-label">{card.label}</div>
+                  <div className="kpi-value">{card.value}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="panel panel-blue" style={areaStyle(layout.positions)}>
+            <div className="panel-title">Positions Panel</div>
+            <div className="panel-subtitle">{layoutState === 'outer_plus_positions' ? 'Expanded' : 'Collapsed'}</div>
+            <div className="positions-wrap">
+              <PositionsPanel />
+            </div>
+          </section>
+
+          <section className="panel panel-yellow" style={areaStyle(layout.scanners)}>
+            <div className="panel-title">Scanners</div>
+            <div className="panel-subtitle">{scannersExpanded ? 'Expanded' : 'Collapsed'}</div>
+            <div className="scanner-stack">
+              <div className="scanner-box">Entry Scanner</div>
+              <div className="scanner-box">Roll Scanner</div>
+              <div className="scanner-box">Vol Context</div>
+            </div>
+          </section>
+
+          <section className="panel panel-cyan" style={areaStyle(layout.newPanel2)}>
+            <div className="panel-title">New Panel 2</div>
+            <div className="panel-subtitle">{layoutState === 'default' ? 'Collapsed' : 'Expanded'}</div>
+          </section>
+        </div>
+      </main>
+
+      <footer className="bottom-lockbar">
+        <div className="lockbar-green" />
+        <div className="lockbar-text">DEFAULT LOAD VIEW REPRESENTED BY THE GREEN BAR ABOVE</div>
+      </footer>
+    </div>
+  );
+}

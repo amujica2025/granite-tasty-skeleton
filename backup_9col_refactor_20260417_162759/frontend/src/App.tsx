@@ -21,42 +21,40 @@ type LayoutConfig = {
 };
 
 const COL_WIDTH = 500;
-const TOTAL_COLS = 10;
-const SHEET_HEIGHT = 930;
+const TOTAL_COLS = 9;
+const SHEET_HEIGHT = 940;
 
 const layouts: Record<LayoutState, LayoutConfig> = {
   default: {
     viewStartCol: 2,
     viewEndCol: 9,
-    newPanel:   { colStart: 2, colSpan: 1, rowStart: 1, rowSpan: 6 },
-    watchlist:  { colStart: 3, colSpan: 1, rowStart: 1, rowSpan: 6 },
-    infoHub:    { colStart: 4, colSpan: 4, rowStart: 1, rowSpan: 2 },
-    positions:  { colStart: 4, colSpan: 4, rowStart: 3, rowSpan: 4 },
-    scanners:   { colStart: 8, colSpan: 1, rowStart: 1, rowSpan: 6 },
-    newPanel2:  { colStart: 9, colSpan: 1, rowStart: 1, rowSpan: 6 },
+    newPanel: { colStart: 2, colSpan: 1, rowStart: 2, rowSpan: 6 },
+    watchlist: { colStart: 3, colSpan: 1, rowStart: 2, rowSpan: 6 },
+    infoHub: { colStart: 4, colSpan: 3, rowStart: 2, rowSpan: 3 },
+    positions: { colStart: 4, colSpan: 3, rowStart: 5, rowSpan: 3 },
+    scanners: { colStart: 7, colSpan: 1, rowStart: 2, rowSpan: 6 },
+    newPanel2: { colStart: 8, colSpan: 1, rowStart: 2, rowSpan: 6 },
   },
-
   sides_bundle: {
     viewStartCol: 1,
     viewEndCol: 10,
-    newPanel:   { colStart: 1, colSpan: 2, rowStart: 1, rowSpan: 6 },
-    watchlist:  { colStart: 3, colSpan: 2, rowStart: 1, rowSpan: 6 },
-    infoHub:    { colStart: 4, colSpan: 4, rowStart: 1, rowSpan: 2 },
-    positions:  { colStart: 4, colSpan: 4, rowStart: 3, rowSpan: 4 },
-    scanners:   { colStart: 7, colSpan: 2, rowStart: 1, rowSpan: 6 },
-    newPanel2:  { colStart: 9, colSpan: 2, rowStart: 1, rowSpan: 6 },
+    newPanel: { colStart: 1, colSpan: 2, rowStart: 2, rowSpan: 6 },
+    watchlist: { colStart: 3, colSpan: 2, rowStart: 2, rowSpan: 6 },
+    infoHub: { colStart: 5, colSpan: 1, rowStart: 2, rowSpan: 3 },
+    positions: { colStart: 5, colSpan: 1, rowStart: 5, rowSpan: 3 },
+    scanners: { colStart: 6, colSpan: 2, rowStart: 2, rowSpan: 6 },
+    newPanel2: { colStart: 8, colSpan: 2, rowStart: 2, rowSpan: 6 },
   },
-
   outer_plus_positions: {
     viewStartCol: 1,
     viewEndCol: 10,
-    newPanel:   { colStart: 1, colSpan: 2, rowStart: 1, rowSpan: 6 },
-    watchlist:  { colStart: 3, colSpan: 1, rowStart: 1, rowSpan: 6 },
-    infoHub:    { colStart: 4, colSpan: 4, rowStart: 1, rowSpan: 1 },
-    positions:  { colStart: 4, colSpan: 4, rowStart: 2, rowSpan: 5 },
-    scanners:   { colStart: 8, colSpan: 1, rowStart: 1, rowSpan: 6 },
-    newPanel2:  { colStart: 9, colSpan: 2, rowStart: 1, rowSpan: 6 },
-  }
+    newPanel: { colStart: 1, colSpan: 2, rowStart: 2, rowSpan: 6 },
+    watchlist: { colStart: 3, colSpan: 1, rowStart: 2, rowSpan: 6 },
+    infoHub: { colStart: 4, colSpan: 3, rowStart: 2, rowSpan: 2 },
+    positions: { colStart: 4, colSpan: 3, rowStart: 4, rowSpan: 4 },
+    scanners: { colStart: 7, colSpan: 1, rowStart: 2, rowSpan: 6 },
+    newPanel2: { colStart: 8, colSpan: 2, rowStart: 2, rowSpan: 6 },
+  },
 };
 
 const tickers = [
@@ -147,7 +145,7 @@ export default function App() {
       <div className="gt-topbar">
         <div className="gt-title">
           <strong>Granite Tasty Skeleton</strong>
-          <span>9-column / 600px refactor</span>
+          <span>9-column / 500px refactor</span>
         </div>
 
         <div className="gt-controls">
@@ -180,7 +178,7 @@ export default function App() {
               <div className="gt-panel-sub">{layoutState === "default" ? "Collapsed" : "Expanded"}</div>
             </div>
 
-            <div className="gt-panel gt-green" style={{ ...areaStyle(layout.watchlist), zIndex: layoutState === "sides_bundle" ? 30 : 1 }}>
+            <div className="gt-panel gt-green" style={areaStyle(layout.watchlist)}>
               <div className="gt-panel-title">Watchlist</div>
               <div className="gt-panel-sub">{layoutState === "sides_bundle" ? "Expanded" : "Collapsed"}</div>
               <div className="gt-watchlist-grid">
@@ -199,7 +197,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="gt-panel gt-red" style={{ ...areaStyle(layout.infoHub), zIndex: 5 }}>
+            <div className="gt-panel gt-red" style={areaStyle(layout.infoHub)}>
               <div className="gt-hub-title">Info Hub</div>
               <div className="gt-cards">
                 {tickers.map((t) => (
@@ -217,7 +215,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="gt-panel gt-blue" style={{ ...areaStyle(layout.positions), zIndex: 5 }}>
+            <div className="gt-panel gt-blue" style={areaStyle(layout.positions)}>
               <div className="gt-panel-title">Positions Panel</div>
               <div className="gt-panel-sub">{layoutState === "outer_plus_positions" ? "Expanded" : "Collapsed"}</div>
               <div className="gt-positions-window">
@@ -232,7 +230,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="gt-panel gt-yellow" style={{ ...areaStyle(layout.scanners), zIndex: layoutState === "sides_bundle" ? 30 : 1 }}>
+            <div className="gt-panel gt-yellow" style={areaStyle(layout.scanners)}>
               <div className="gt-panel-title">Scanners</div>
               <div className="gt-panel-sub">{layoutState === "sides_bundle" ? "Expanded" : "Collapsed"}</div>
               <div className="gt-box">Entry Scanner</div>
@@ -250,8 +248,3 @@ export default function App() {
     </div>
   );
 }
-
-
-
-
-

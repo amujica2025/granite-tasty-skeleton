@@ -24,10 +24,8 @@ const COL_WIDTH = 500;
 const TOTAL_COLS = 10;
 const SHEET_HEIGHT = 930;
 
-const layouts: Record<LayoutState, LayoutConfig> = {
+const layouts = {
   default: {
-    viewStartCol: 2,
-    viewEndCol: 9,
     newPanel:   { colStart: 2, colSpan: 1, rowStart: 1, rowSpan: 6 },
     watchlist:  { colStart: 3, colSpan: 1, rowStart: 1, rowSpan: 6 },
     infoHub:    { colStart: 4, colSpan: 4, rowStart: 1, rowSpan: 2 },
@@ -36,9 +34,7 @@ const layouts: Record<LayoutState, LayoutConfig> = {
     newPanel2:  { colStart: 9, colSpan: 1, rowStart: 1, rowSpan: 6 },
   },
 
-  sides_bundle: {
-    viewStartCol: 1,
-    viewEndCol: 10,
+  sidesExpanded: {
     newPanel:   { colStart: 1, colSpan: 2, rowStart: 1, rowSpan: 6 },
     watchlist:  { colStart: 3, colSpan: 2, rowStart: 1, rowSpan: 6 },
     infoHub:    { colStart: 4, colSpan: 4, rowStart: 1, rowSpan: 2 },
@@ -47,9 +43,7 @@ const layouts: Record<LayoutState, LayoutConfig> = {
     newPanel2:  { colStart: 9, colSpan: 2, rowStart: 1, rowSpan: 6 },
   },
 
-  outer_plus_positions: {
-    viewStartCol: 1,
-    viewEndCol: 10,
+  positionsExpanded: {
     newPanel:   { colStart: 1, colSpan: 2, rowStart: 1, rowSpan: 6 },
     watchlist:  { colStart: 3, colSpan: 1, rowStart: 1, rowSpan: 6 },
     infoHub:    { colStart: 4, colSpan: 4, rowStart: 1, rowSpan: 1 },
@@ -180,7 +174,7 @@ export default function App() {
               <div className="gt-panel-sub">{layoutState === "default" ? "Collapsed" : "Expanded"}</div>
             </div>
 
-            <div className="gt-panel gt-green" style={{ ...areaStyle(layout.watchlist), zIndex: layoutState === "sides_bundle" ? 30 : 1 }}>
+            <div className="gt-panel gt-green" style={areaStyle(layout.watchlist)}>
               <div className="gt-panel-title">Watchlist</div>
               <div className="gt-panel-sub">{layoutState === "sides_bundle" ? "Expanded" : "Collapsed"}</div>
               <div className="gt-watchlist-grid">
@@ -199,7 +193,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="gt-panel gt-red" style={{ ...areaStyle(layout.infoHub), zIndex: 5 }}>
+            <div className="gt-panel gt-red" style={areaStyle(layout.infoHub)}>
               <div className="gt-hub-title">Info Hub</div>
               <div className="gt-cards">
                 {tickers.map((t) => (
@@ -217,7 +211,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="gt-panel gt-blue" style={{ ...areaStyle(layout.positions), zIndex: 5 }}>
+            <div className="gt-panel gt-blue" style={areaStyle(layout.positions)}>
               <div className="gt-panel-title">Positions Panel</div>
               <div className="gt-panel-sub">{layoutState === "outer_plus_positions" ? "Expanded" : "Collapsed"}</div>
               <div className="gt-positions-window">
@@ -232,7 +226,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="gt-panel gt-yellow" style={{ ...areaStyle(layout.scanners), zIndex: layoutState === "sides_bundle" ? 30 : 1 }}>
+            <div className="gt-panel gt-yellow" style={areaStyle(layout.scanners)}>
               <div className="gt-panel-title">Scanners</div>
               <div className="gt-panel-sub">{layoutState === "sides_bundle" ? "Expanded" : "Collapsed"}</div>
               <div className="gt-box">Entry Scanner</div>
@@ -250,8 +244,6 @@ export default function App() {
     </div>
   );
 }
-
-
 
 
 

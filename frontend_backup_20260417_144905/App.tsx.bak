@@ -1,0 +1,348 @@
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import PositionsPanel from './components/PositionsPanel';
+
+type LayoutState = 'default' | 'sides_bundle' | 'outer_plus_positions';
+
+type RegionKey = 'newPanel' | 'watchlist' | 'infoHub' | 'positions' | 'scanners' | 'newPanel2';
+
+type SpanMap = Record<RegionKey, number>;
+
+type TickerCard = {
+  symbol: string;
+  last: number;
+  chgPct: number;
+};
+
+const PRESETS: Record<LayoutState, { label: string; spans: SpanMap }> = {
+  default: {
+    label: 'Default',
+    spans: {
+      newPanel: 1,
+      watchlist: 1,
+      infoHub: 4,
+      positions: 4,
+      scanners: 1,
+      newPanel2: 1,
+    },
+  },
+  sides_bundle: {
+    label: 'Outer + Watchlist/Scanners',
+    spans: {
+      newPanel: 2,
+      watchlist: 2,
+      infoHub: 2,
+      positions: 2,
+      scanners: 2,
+      newPanel2: 2,
+    },
+  },
+  outer_plus_positions: {
+    label: 'Outer + Positions',
+    spans: {
+      newPanel: 2,
+      watchlist: 1,
+      infoHub: 4,
+      positions: 4,
+      scanners: 1,
+      newPanel2: 2,
+    },
+  },
+};
+
+const tickerSeed: TickerCard[] = [
+  { symbol: 'SPY', last: 710.52, chgPct: -1.47 },
+  { symbol: 'AAPL', last: 270.06, chgPct: 0.71 },
+  { symbol: 'QQQ', last: 648.93, chgPct: -0.27 },
+  { symbol: 'TSLA', last: 400.16, chgPct: -1.81 },
+  { symbol: 'NVDA', last: 201.33, chgPct: -2.26 },
+  { symbol: 'SPX', last: 5208.43, chgPct: 0.17 },
+  { symbol: 'VIX', last: 15.83, chgPct: 2.10 },
+];
+
+function fmtPct(v: number) {
+  return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+}
+
+function panelGridColumn(start: number, span: number) {
+  return `${start} / ${start + span}`;
+}
+
+export default function App() {
+  const [layoutState, setLayoutState] = useState<LayoutState>('default');
+  const [netLiq, setNetLiq] = useState<number | null>(null);
+  const [bp, setBp] = useState<number | null>(null);
+  const [tickers, setTickers] = useState<TickerCard[]>(tickerSeed);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const fetchBalances = async () => {
+      try {
+        const res = await fetch('http://localhost:8000/api/balances');
+        const data = await res.json();
+        if (data.balances && data.balances.length > 0) {
+          const row = data.balances[0];
+          setNetLiq(Number(row.net_liquidating_value ?? null));
+          setBp(
+            Number(
+              row.option_buying_power ??
+                row.derivatives_buying_power ??
+                row.buying_power ??
+                row.cash_available_to_trade ??
+                null,
+            ),
+          );
+        }
+      } catch (e) {
+        console.error('Failed to fetch balances:', e);
+      }
+    };
+
+    fetchBalances();
+    const interval = setInterval(fetchBalances, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8000/ws/market');
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'RawFeed' && msg.data?.type === 'FEED_DATA') {
+          const feed = msg.data.data;
+          if (feed[0] === 'Quote') {
+            const values = feed[1];
+            const map: Record<string, { bid: number; ask: number }> = {};
+            for (let i = 0; i < values.length; i += 5) {
+              map[values[i]] = { bid: values[i + 1], ask: values[i + 2] };
+            }
+            setTickers((prev) =>
+              prev.map((row) => {
+                const q = map[row.symbol];
+                if (!q || typeof q.bid !== 'number' || typeof q.ask !== 'number') return row;
+                const mid = (q.bid + q.ask) / 2;
+                return Number.isFinite(mid) ? { ...row, last: Number(mid.toFixed(2)) } : row;
+              }),
+            );
+          }
+        }
+      } catch {
+        console.log('Quote parse error');
+      }
+    };
+    return () => ws.close();
+  }, []);
+
+  const spans = PRESETS[layoutState].spans;
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+
+    const centerDefaultField = () => {
+      const worldWidth = el.scrollWidth;
+      const viewWidth = el.clientWidth;
+      const centeredLeft = Math.max(0, (worldWidth - viewWidth) / 2);
+      el.scrollTo({ left: centeredLeft, behavior: 'auto' });
+    };
+
+    centerDefaultField();
+    const t = setTimeout(centerDefaultField, 60);
+    window.addEventListener('resize', centerDefaultField);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', centerDefaultField);
+    };
+  }, [layoutState]);
+
+  const positionsTop = layoutState === 'outer_plus_positions' ? 2 : 4;
+  const infoHubBottom = layoutState === 'outer_plus_positions' ? 2 : 4;
+
+  const cards = useMemo(
+    () => [
+      { label: 'NET LIQ', value: netLiq !== null ? `$${netLiq.toFixed(2)}` : 'â€”' },
+      { label: 'BP', value: bp !== null ? `$${bp.toFixed(2)}` : 'â€”' },
+      { label: '25X', value: netLiq !== null ? `$${(netLiq * 25).toFixed(2)}` : 'â€”' },
+      { label: 'DEFAULT', value: 'All Collapsed' },
+      { label: 'PRESET', value: PRESETS[layoutState].label },
+    ],
+    [bp, layoutState, netLiq],
+  );
+
+  return (
+    <div className="shell">
+      <div className="topbar">
+        <div className="topbar-left">
+          <div className="brand">GRANITE TASTY</div>
+          <div className="topbar-sub">Locked default viewport with horizontal panning</div>
+        </div>
+        <div className="topbar-right">
+          <button
+            className={layoutState === 'default' ? 'preset active' : 'preset'}
+            onClick={() => setLayoutState('default')}
+          >
+            Default
+          </button>
+          <button
+            className={layoutState === 'sides_bundle' ? 'preset active' : 'preset'}
+            onClick={() => setLayoutState('sides_bundle')}
+          >
+            Outer + Watchlist/Scanners
+          </button>
+          <button
+            className={layoutState === 'outer_plus_positions' ? 'preset active' : 'preset'}
+            onClick={() => setLayoutState('outer_plus_positions')}
+          >
+            Outer + Positions
+          </button>
+        </div>
+      </div>
+
+      <div className="viewport" ref={viewportRef}>
+        <div className="world">
+          <div className="axis axis-top">
+            <div className="axis-cell">-B</div>
+            <div className="axis-cell">-A</div>
+            <div className="axis-cell">A</div>
+            <div className="axis-cell">B</div>
+            <div className="axis-cell">C</div>
+            <div className="axis-cell">D</div>
+            <div className="axis-cell">E</div>
+            <div className="axis-cell">F</div>
+            <div className="axis-cell">+A</div>
+            <div className="axis-cell">+B</div>
+          </div>
+
+          <div className="stage">
+            <div className="y-axis left">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <div key={`l-${n}`}>{n}</div>
+              ))}
+            </div>
+
+            <div className="grid-world">
+              <div className="gutter gutter-left" />
+              <div className="gutter gutter-right" />
+
+              <section
+                className="panel magenta"
+                style={{ gridColumn: panelGridColumn(2, spans.newPanel), gridRow: '1 / 7' }}
+              >
+                <div className="panel-title">New Panel</div>
+                <div className="panel-sub">{spans.newPanel === 1 ? 'Collapsed' : 'Expanded'}</div>
+              </section>
+
+              <section
+                className="panel green"
+                style={{ gridColumn: panelGridColumn(2 + spans.newPanel, spans.watchlist), gridRow: '1 / 7' }}
+              >
+                <div className="panel-title">Watchlist</div>
+                <div className="panel-sub">{spans.watchlist === 1 ? 'Collapsed' : 'Expanded'}</div>
+                {spans.watchlist === 1 ? (
+                  <div className="watchlist-mini">
+                    <div className="watchlist-head">
+                      <span>Symbol</span>
+                      <span>Last</span>
+                      <span>% Chg</span>
+                      <span>IV Pctl</span>
+                    </div>
+                    {tickers.slice(0, 6).map((row, idx) => (
+                      <div className="watchlist-row" key={`${row.symbol}-${idx}`}>
+                        <span>{row.symbol}</span>
+                        <span>{row.last.toFixed(2)}</span>
+                        <span className={row.chgPct >= 0 ? 'up' : 'down'}>{fmtPct(row.chgPct)}</span>
+                        <span>{Math.max(20, 31 + idx * 7)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="panel-placeholder">Expanded watchlist working field</div>
+                )}
+              </section>
+
+              <section
+                className="panel red"
+                style={{
+                  gridColumn: panelGridColumn(2 + spans.newPanel + spans.watchlist, spans.infoHub),
+                  gridRow: `1 / ${infoHubBottom}`,
+                }}
+              >
+                <div className="panel-title">Info Hub</div>
+                <div className="ticker-row">
+                  {tickers.map((card) => (
+                    <div className="ticker-card" key={card.symbol}>
+                      <div className="ticker-symbol">{card.symbol}</div>
+                      <div className="ticker-last">{card.last.toFixed(2)}</div>
+                      <div className={card.chgPct >= 0 ? 'ticker-chg up' : 'ticker-chg down'}>
+                        {fmtPct(card.chgPct)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="kpi-row">
+                  {cards.map((card) => (
+                    <div className="kpi-card" key={card.label}>
+                      <div className="kpi-label">{card.label}</div>
+                      <div className="kpi-value">{card.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section
+                className="panel blue"
+                style={{
+                  gridColumn: panelGridColumn(2 + spans.newPanel + spans.watchlist, spans.positions),
+                  gridRow: `${positionsTop} / 7`,
+                }}
+              >
+                <div className="panel-title">Positions Panel</div>
+                <div className="panel-sub">{layoutState === 'outer_plus_positions' ? 'Expanded' : 'Collapsed'}</div>
+                <div className="positions-wrap">
+                  <PositionsPanel />
+                </div>
+              </section>
+
+              <section
+                className="panel sand"
+                style={{
+                  gridColumn: panelGridColumn(2 + spans.newPanel + spans.watchlist + spans.infoHub, spans.scanners),
+                  gridRow: '1 / 7',
+                }}
+              >
+                <div className="panel-title">Scanners</div>
+                <div className="panel-sub">{spans.scanners === 1 ? 'Collapsed' : 'Expanded'}</div>
+                <div className="scanner-stack">
+                  <div className="scanner-pill">Entry Scanner</div>
+                  <div className="scanner-pill">Roll Scanner</div>
+                  <div className="scanner-pill">Vol Context</div>
+                </div>
+              </section>
+
+              <section
+                className="panel cyan"
+                style={{
+                  gridColumn: panelGridColumn(2 + spans.newPanel + spans.watchlist + spans.infoHub + spans.scanners, spans.newPanel2),
+                  gridRow: '1 / 7',
+                }}
+              >
+                <div className="panel-title">New Panel 2</div>
+                <div className="panel-sub">{spans.newPanel2 === 1 ? 'Collapsed' : 'Expanded'}</div>
+              </section>
+            </div>
+
+            <div className="y-axis right">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <div key={`r-${n}`}>{n}</div>
+              ))}
+            </div>
+          </div>
+
+          <div className="greenbar-wrap">
+            <div className="greenbar" />
+          </div>
+          <div className="greenbar-caption">DEFAULT LOAD VIEW REPRESENTED BY THE GREEN BAR ABOVE</div>
+        </div>
+      </div>
+    </div>
+  );
+}
