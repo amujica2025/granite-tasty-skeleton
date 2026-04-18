@@ -30,15 +30,22 @@ body,
   letter-spacing: 0.03em;
 }
 
+.panel-head button,
+.popup-ghost,
+.action-btn {
+  border: 1px solid rgba(0,0,0,0.35);
+  background: rgba(255,255,255,0.24);
+  color: #111;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 6px 10px;
+}
+
 .panel-head button {
   width: 24px;
   height: 24px;
-  border: 1px solid rgba(0,0,0,0.4);
-  background: rgba(255,255,255,0.35);
-  color: #111;
-  cursor: pointer;
   font-size: 16px;
-  line-height: 1;
   padding: 0;
 }
 
@@ -65,4 +72,232 @@ body,
   color: #3b3212;
   font-size: 14px;
   font-weight: 700;
+}
+
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.popup-window {
+  width: min(1460px, calc(100vw - 48px));
+  height: min(860px, calc(100vh - 60px));
+  background: #0f1217;
+  border: 1px solid #26303f;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.popup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #26303f;
+  background: #141922;
+}
+
+.popup-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ecf3ff;
+}
+
+.popup-sub {
+  font-size: 12px;
+  color: #9eb0c9;
+  margin-top: 2px;
+}
+
+.popup-head-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.popup-close {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #394960;
+  background: #202938;
+  color: #fff;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.popup-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px 0;
+  background: #0f1217;
+}
+
+.popup-tabs button {
+  border: 1px solid #2a3648;
+  background: #111722;
+  color: #b8c7dd;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.popup-tabs button.active {
+  background: #1b2533;
+  color: #fff;
+}
+
+.popup-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+
+.popup-main {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 14px;
+}
+
+.popup-side {
+  width: 310px;
+  border-left: 1px solid #26303f;
+  background: #111722;
+  padding: 14px;
+  overflow: auto;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pane-title,
+.schema-title,
+.artifact-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ecf3ff;
+}
+
+.query-box {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  background: #0a0f16;
+  color: #e7edf7;
+  border: 1px solid #26303f;
+  padding: 10px;
+}
+
+.answer-box,
+.flow-card,
+.schema-card,
+.table-card,
+.artifact-card,
+.callout,
+.alert-builder {
+  background: #111722;
+  border: 1px solid #26303f;
+  padding: 12px;
+}
+
+.toolbar-row,
+.builder-line,
+.toggle-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.callout-grid,
+.two-col,
+.schema-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.callout-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.schema-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.callout-label,
+.builder-note,
+.artifact-detail,
+.simple-table th,
+.simple-table td,
+.schema-card li,
+.flow-card li {
+  color: #b8c7dd;
+  font-size: 12px;
+}
+
+.callout-value {
+  color: #fff;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.simple-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.simple-table th,
+.simple-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #26303f;
+  text-align: left;
+  vertical-align: top;
+}
+
+.alert-builder input,
+.alert-builder select {
+  background: #0a0f16;
+  color: #e7edf7;
+  border: 1px solid #26303f;
+  padding: 6px 8px;
+}
+
+.artifact-card {
+  margin-top: 10px;
+}
+
+.artifact-visual {
+  margin-top: 8px;
+  height: 88px;
+  background: linear-gradient(180deg, rgba(96,165,250,0.28), rgba(16,24,40,0.12));
+  border: 1px solid #2c3c55;
+}
+
+@media (max-width: 1100px) {
+  .schema-grid,
+  .two-col,
+  .callout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .popup-body {
+    flex-direction: column;
+  }
+
+  .popup-side {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #26303f;
+  }
 }
