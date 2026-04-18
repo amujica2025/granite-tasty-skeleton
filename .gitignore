@@ -25,3 +25,6 @@ Thumbs.db
 # --- OS / editor ---
 .vscode/
 .idea/
+
+*.ps1
+backup_*/
