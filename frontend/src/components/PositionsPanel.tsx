@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface Position {
   id: string;
@@ -25,6 +25,68 @@ interface Position {
   subIndustry: string;
 }
 
+type Totals = {
+  netQty: number;
+  netLiq: number;
+  plOpen: number;
+  bpEffect: number;
+  delta: number;
+  theta: number;
+};
+
+const HEADER_CELL_RIGHT: React.CSSProperties = {
+  textAlign: 'right',
+  padding: '6px 5px',
+  whiteSpace: 'nowrap',
+  fontWeight: 700,
+};
+
+const HEADER_CELL_LEFT: React.CSSProperties = {
+  ...HEADER_CELL_RIGHT,
+  textAlign: 'left',
+};
+
+const BODY_CELL_RIGHT: React.CSSProperties = {
+  textAlign: 'right',
+  padding: '8px 5px',
+  whiteSpace: 'nowrap',
+};
+
+const BODY_CELL_LEFT: React.CSSProperties = {
+  padding: '8px 5px',
+  whiteSpace: 'nowrap',
+};
+
+const FOOTER_CELL_RIGHT: React.CSSProperties = {
+  ...BODY_CELL_RIGHT,
+  fontWeight: 700,
+  color: '#f3f4f6',
+};
+
+const FOOTER_CELL_LEFT: React.CSSProperties = {
+  ...BODY_CELL_LEFT,
+  fontWeight: 700,
+  color: '#f3f4f6',
+};
+
+function formatSigned(value: number, decimals = 0) {
+  const fixed = value.toFixed(decimals);
+  return value > 0 ? `+${fixed}` : fixed;
+}
+
+function formatPlain(value: number, decimals = 0) {
+  return value.toFixed(decimals);
+}
+
+function getEffectiveQty(actualQty: number, overrideQty?: number) {
+  return overrideQty !== undefined ? overrideQty : actualQty;
+}
+
+function scaleRowTotal(rowTotalValue: number, actualQty: number, effectiveQty: number) {
+  if (actualQty === 0) return 0;
+  return rowTotalValue * (effectiveQty / actualQty);
+}
+
 export default function PositionsPanel() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -49,19 +111,93 @@ export default function PositionsPanel() {
 
   useEffect(() => {
     const mockPositions: Position[] = [
-      { id: '1', symbol: 'SPY 240620C550', qty: -5, iv: 18.4, mark: 12.35, markChng: -0.45, tradePrice: 12.8, high: 13.2, low: 12.1, plOpen: -225, cost: 6400, netLiq: -6175, bpEffect: 1250, intVal: 0, dte: 65, exDate: '2024-06-20', theta: -8.2, delta: 0.62, gamma: 0.012, sector: 'Equity', industry: 'Broad Market', subIndustry: 'ETF' },
-      { id: '2', symbol: 'AAPL 240517P180', qty: 3, iv: 24.7, mark: 3.85, markChng: 0.65, tradePrice: 3.2, high: 4.1, low: 3.15, plOpen: 195, cost: 960, netLiq: 1155, bpEffect: -300, intVal: 0, dte: 31, exDate: '2024-05-17', theta: -4.1, delta: -0.38, gamma: 0.018, sector: 'Technology', industry: 'Consumer Electronics', subIndustry: 'Hardware' },
-      { id: '3', symbol: 'QQQ 240628C460', qty: -2, iv: 21.3, mark: 8.9, markChng: -1.2, tradePrice: 10.1, high: 10.5, low: 8.7, plOpen: -240, cost: 2020, netLiq: -1780, bpEffect: 920, intVal: 0, dte: 73, exDate: '2024-06-28', theta: -6.8, delta: 0.55, gamma: 0.009, sector: 'Equity', industry: 'Broad Market', subIndustry: 'ETF' },
+      {
+        id: '1',
+        symbol: 'SPY 240620C550',
+        qty: -5,
+        iv: 18.4,
+        mark: 12.35,
+        markChng: -0.45,
+        tradePrice: 12.8,
+        high: 13.2,
+        low: 12.1,
+        plOpen: -225,
+        cost: 6400,
+        netLiq: -6175,
+        bpEffect: 1250,
+        intVal: 0,
+        dte: 65,
+        exDate: '2024-06-20',
+        theta: -8.2,
+        delta: 0.62,
+        gamma: 0.012,
+        sector: 'Equity',
+        industry: 'Broad Market',
+        subIndustry: 'ETF',
+      },
+      {
+        id: '2',
+        symbol: 'AAPL 240517P180',
+        qty: 3,
+        iv: 24.7,
+        mark: 3.85,
+        markChng: 0.65,
+        tradePrice: 3.2,
+        high: 4.1,
+        low: 3.15,
+        plOpen: 195,
+        cost: 960,
+        netLiq: 1155,
+        bpEffect: -300,
+        intVal: 0,
+        dte: 31,
+        exDate: '2024-05-17',
+        theta: -4.1,
+        delta: -0.38,
+        gamma: 0.018,
+        sector: 'Technology',
+        industry: 'Consumer Electronics',
+        subIndustry: 'Hardware',
+      },
+      {
+        id: '3',
+        symbol: 'QQQ 240628C460',
+        qty: -2,
+        iv: 21.3,
+        mark: 8.9,
+        markChng: -1.2,
+        tradePrice: 10.1,
+        high: 10.5,
+        low: 8.7,
+        plOpen: -240,
+        cost: 2020,
+        netLiq: -1780,
+        bpEffect: 920,
+        intVal: 0,
+        dte: 73,
+        exDate: '2024-06-28',
+        theta: -6.8,
+        delta: 0.55,
+        gamma: 0.009,
+        sector: 'Equity',
+        industry: 'Broad Market',
+        subIndustry: 'ETF',
+      },
     ];
+
     setPositions(mockPositions);
   }, []);
 
   const toggleRow = (id: string, e: React.MouseEvent) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
+
       if (e.ctrlKey || e.metaKey) {
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
+        if (next.has(id)) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
       } else {
         next.clear();
         next.add(id);
@@ -70,25 +206,85 @@ export default function PositionsPanel() {
       setTempQtys((prevQtys) => {
         const filtered: Record<string, number> = {};
         Object.entries(prevQtys).forEach(([key, value]) => {
-          if (next.has(key)) filtered[key] = value;
+          if (next.has(key)) {
+            filtered[key] = value;
+          }
         });
         return filtered;
+      });
+
+      setHoveredQtyId((current) => {
+        if (!current) return null;
+        return next.has(current) ? current : null;
       });
 
       return next;
     });
   };
 
-  const updateTempQty = (id: string, actualQty: number, dir: 'up' | 'down') => {
+  const updateTempQty = (
+    id: string,
+    actualQty: number,
+    direction: 'towardZero' | 'towardActual'
+  ) => {
     setTempQtys((prev) => {
       const current = prev[id] !== undefined ? prev[id] : actualQty;
-      const nextQty = dir === 'up' ? current + 1 : current - 1;
+      let nextQty = current;
+
+      if (direction === 'towardZero') {
+        if (actualQty > 0) {
+          nextQty = Math.max(0, current - 1);
+        } else if (actualQty < 0) {
+          nextQty = Math.min(0, current + 1);
+        }
+      } else {
+        if (actualQty > 0) {
+          nextQty = Math.min(actualQty, current + 1);
+        } else if (actualQty < 0) {
+          nextQty = Math.max(actualQty, current - 1);
+        }
+      }
+
       const next = { ...prev };
-      if (nextQty === actualQty) delete next[id];
-      else next[id] = nextQty;
+      if (nextQty === actualQty) {
+        delete next[id];
+      } else {
+        next[id] = nextQty;
+      }
+
       return next;
     });
   };
+
+  const activeRows = useMemo(() => {
+    if (selectedIds.size === 0) return positions;
+    return positions.filter((pos) => selectedIds.has(pos.id));
+  }, [positions, selectedIds]);
+
+  const totals = useMemo<Totals>(() => {
+    return activeRows.reduce<Totals>(
+      (acc, pos) => {
+        const effectiveQty = getEffectiveQty(pos.qty, tempQtys[pos.id]);
+
+        acc.netQty += effectiveQty;
+        acc.netLiq += scaleRowTotal(pos.netLiq, pos.qty, effectiveQty);
+        acc.plOpen += scaleRowTotal(pos.plOpen, pos.qty, effectiveQty);
+        acc.bpEffect += scaleRowTotal(pos.bpEffect, pos.qty, effectiveQty);
+        acc.delta += scaleRowTotal(pos.delta, pos.qty, effectiveQty);
+        acc.theta += scaleRowTotal(pos.theta, pos.qty, effectiveQty);
+
+        return acc;
+      },
+      {
+        netQty: 0,
+        netLiq: 0,
+        plOpen: 0,
+        bpEffect: 0,
+        delta: 0,
+        theta: 0,
+      }
+    );
+  }, [activeRows, tempQtys]);
 
   return (
     <div
@@ -97,111 +293,284 @@ export default function PositionsPanel() {
         width: '100%',
         height: '100%',
         background: '#040404',
-        overflow: 'auto',
         fontSize: '0.78em',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
       }}
     >
-      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1500px' }}>
-        <thead style={{ position: 'sticky', top: 0, background: '#090909', zIndex: 10 }}>
-          <tr style={{ borderBottom: '1px solid #1b1b1b' }}>
-            <th style={{ textAlign: 'left', padding: '6px 5px' }}>Position</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Qty</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>IV</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Mark</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Mark Chng $</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Trade Price</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>High</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Low</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>P/L Open $</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Cost</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Net Liq</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>BP Effect</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>IntVal</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>DTE</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Ex Date</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Theta (Î˜)</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Delta (Î”)</th>
-            <th style={{ textAlign: 'right', padding: '6px 5px' }}>Gamma (Î“)</th>
-            <th style={{ textAlign: 'left', padding: '6px 5px' }}>Sector</th>
-            <th style={{ textAlign: 'left', padding: '6px 5px' }}>Industry</th>
-            <th style={{ textAlign: 'left', padding: '6px 5px' }}>Sub-Ind</th>
-          </tr>
-        </thead>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+        }}
+      >
+        <table
+          style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            minWidth: '1500px',
+            tableLayout: 'auto',
+          }}
+        >
+          <thead
+            style={{
+              position: 'sticky',
+              top: 0,
+              background: '#090909',
+              zIndex: 10,
+            }}
+          >
+            <tr style={{ borderBottom: '1px solid #1b1b1b' }}>
+              <th style={HEADER_CELL_LEFT}>Position</th>
+              <th style={HEADER_CELL_RIGHT}>Qty</th>
+              <th style={HEADER_CELL_RIGHT}>IV</th>
+              <th style={HEADER_CELL_RIGHT}>Mark</th>
+              <th style={HEADER_CELL_RIGHT}>Mark Chng $</th>
+              <th style={HEADER_CELL_RIGHT}>Trade Price</th>
+              <th style={HEADER_CELL_RIGHT}>High</th>
+              <th style={HEADER_CELL_RIGHT}>Low</th>
+              <th style={HEADER_CELL_RIGHT}>P/L Open $</th>
+              <th style={HEADER_CELL_RIGHT}>Cost</th>
+              <th style={HEADER_CELL_RIGHT}>Net Liq</th>
+              <th style={HEADER_CELL_RIGHT}>BP Effect</th>
+              <th style={HEADER_CELL_RIGHT}>IntVal</th>
+              <th style={HEADER_CELL_RIGHT}>DTE</th>
+              <th style={HEADER_CELL_RIGHT}>Ex Date</th>
+              <th style={HEADER_CELL_RIGHT}>Theta (Î˜)</th>
+              <th style={HEADER_CELL_RIGHT}>Delta (Î”)</th>
+              <th style={HEADER_CELL_RIGHT}>Gamma (Î“)</th>
+              <th style={HEADER_CELL_LEFT}>Sector</th>
+              <th style={HEADER_CELL_LEFT}>Industry</th>
+              <th style={HEADER_CELL_LEFT}>Sub-Ind</th>
+            </tr>
+          </thead>
 
-        <tbody>
-          {positions.map((pos) => {
-            const isSelected = selectedIds.has(pos.id);
-            const displayQty = tempQtys[pos.id] !== undefined ? tempQtys[pos.id] : pos.qty;
-            const isModified = tempQtys[pos.id] !== undefined;
-            const showQtyControls = hoveredQtyId === pos.id && isSelected;
+          <tbody>
+            {positions.map((pos) => {
+              const isSelected = selectedIds.has(pos.id);
+              const displayQty = getEffectiveQty(pos.qty, tempQtys[pos.id]);
+              const isModified = tempQtys[pos.id] !== undefined;
+              const showQtyControls = hoveredQtyId === pos.id && isSelected;
 
-            return (
-              <tr
-                key={pos.id}
-                onClick={(e) => toggleRow(pos.id, e)}
+              const canMoveTowardZero =
+                (pos.qty > 0 && displayQty > 0) || (pos.qty < 0 && displayQty < 0);
+
+              const canMoveTowardActual = displayQty !== pos.qty;
+
+              const towardActualArrow = pos.qty > 0 ? '▲' : '▼';
+              const towardZeroArrow = pos.qty > 0 ? '▼' : '▲';
+
+              return (
+                <tr
+                  key={pos.id}
+                  onClick={(e) => toggleRow(pos.id, e)}
+                  style={{
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #111',
+                    background: isModified
+                      ? 'rgba(250, 204, 21, 0.08)'
+                      : isSelected
+                        ? 'rgba(255, 255, 255, 0.04)'
+                        : 'transparent',
+                    boxShadow: isSelected ? 'inset 0 0 0 1px #ffffff' : 'none',
+                  }}
+                >
+                  <td style={{ ...BODY_CELL_LEFT, fontWeight: 500 }}>{pos.symbol}</td>
+
+                  <td
+                    onMouseEnter={() => setHoveredQtyId(pos.id)}
+                    onMouseLeave={() =>
+                      setHoveredQtyId((prev) => (prev === pos.id ? null : prev))
+                    }
+                    style={{
+                      ...BODY_CELL_RIGHT,
+                      position: 'relative',
+                      paddingRight: '30px',
+                      overflow: 'visible',
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: isModified ? '#eab308' : '#ffffff',
+                        fontWeight: isModified ? 700 : 400,
+                      }}
+                    >
+                      {displayQty}
+                    </span>
+
+                    {showQtyControls && (canMoveTowardActual || canMoveTowardZero) && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          right: '4px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          pointerEvents: 'auto',
+                        }}
+                      >
+                        {canMoveTowardActual && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateTempQty(pos.id, pos.qty, 'towardActual');
+                            }}
+                            title="Move toward actual qty"
+                            style={{
+                              width: '16px',
+                              height: '14px',
+                              color: '#cfcfcf',
+                              background: '#1b1b1b',
+                              border: '1px solid #444',
+                              borderRadius: '2px',
+                              cursor: 'pointer',
+                              fontSize: '9px',
+                              lineHeight: 1,
+                              padding: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {towardActualArrow}
+                          </button>
+                        )}
+
+                        {canMoveTowardZero && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateTempQty(pos.id, pos.qty, 'towardZero');
+                            }}
+                            title="Move toward zero"
+                            style={{
+                              width: '16px',
+                              height: '14px',
+                              color: '#cfcfcf',
+                              background: '#1b1b1b',
+                              border: '1px solid #444',
+                              borderRadius: '2px',
+                              cursor: 'pointer',
+                              fontSize: '9px',
+                              lineHeight: 1,
+                              padding: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {towardZeroArrow}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+
+                  <td style={BODY_CELL_RIGHT}>{pos.iv.toFixed(1)}%</td>
+                  <td style={BODY_CELL_RIGHT}>{pos.mark.toFixed(2)}</td>
+
+                  <td
+                    style={{
+                      ...BODY_CELL_RIGHT,
+                      color: pos.markChng >= 0 ? '#22c55e' : '#ef4444',
+                    }}
+                  >
+                    {formatSigned(pos.markChng, 2)}
+                  </td>
+
+                  <td style={BODY_CELL_RIGHT}>{pos.tradePrice.toFixed(2)}</td>
+                  <td style={BODY_CELL_RIGHT}>{pos.high.toFixed(2)}</td>
+                  <td style={BODY_CELL_RIGHT}>{pos.low.toFixed(2)}</td>
+
+                  <td
+                    style={{
+                      ...BODY_CELL_RIGHT,
+                      color: pos.plOpen >= 0 ? '#22c55e' : '#ef4444',
+                    }}
+                  >
+                    {formatSigned(pos.plOpen, 0)}
+                  </td>
+
+                  <td style={BODY_CELL_RIGHT}>{pos.cost.toFixed(0)}</td>
+                  <td style={{ ...BODY_CELL_RIGHT, fontWeight: 600 }}>
+                    {pos.netLiq.toFixed(0)}
+                  </td>
+                  <td style={BODY_CELL_RIGHT}>{pos.bpEffect.toFixed(0)}</td>
+                  <td style={BODY_CELL_RIGHT}>{pos.intVal.toFixed(0)}</td>
+                  <td style={BODY_CELL_RIGHT}>{pos.dte}</td>
+                  <td style={BODY_CELL_RIGHT}>{pos.exDate}</td>
+                  <td style={BODY_CELL_RIGHT}>{pos.theta.toFixed(1)}</td>
+                  <td style={BODY_CELL_RIGHT}>{pos.delta.toFixed(2)}</td>
+                  <td style={BODY_CELL_RIGHT}>{pos.gamma.toFixed(3)}</td>
+                  <td style={BODY_CELL_LEFT}>{pos.sector}</td>
+                  <td style={BODY_CELL_LEFT}>{pos.industry}</td>
+                  <td style={BODY_CELL_LEFT}>{pos.subIndustry}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        style={{
+          borderTop: '1px solid #1f1f1f',
+          background: '#0b0b0b',
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 12,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
+        <table
+          style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            minWidth: '1500px',
+            tableLayout: 'auto',
+          }}
+        >
+          <tbody>
+            <tr style={{ borderTop: '1px solid #202020' }}>
+              <td style={FOOTER_CELL_LEFT}>TOTALS</td>
+              <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.netQty, 0)}</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+
+              <td
                 style={{
-                  cursor: 'pointer',
-                  borderBottom: '1px solid #111',
-                  background: isModified ? 'rgba(250, 204, 21, 0.08)' : 'transparent',
-                  outline: isSelected ? '1px solid #ffffff' : 'none',
-                  outlineOffset: '-1px',
+                  ...FOOTER_CELL_RIGHT,
+                  color: totals.plOpen >= 0 ? '#22c55e' : '#ef4444',
                 }}
               >
-                <td style={{ padding: '8px 5px', fontWeight: 500 }}>{pos.symbol}</td>
-                <td
-                  onMouseEnter={() => setHoveredQtyId(pos.id)}
-                  onMouseLeave={() => setHoveredQtyId((prev) => (prev === pos.id ? null : prev))}
-                  style={{ textAlign: 'right', padding: '8px 5px', position: 'relative' }}
-                >
-                  <span style={{ color: isModified ? '#eab308' : '#ffffff' }}>{displayQty}</span>
-                  {showQtyControls && (
-                    <div style={{ position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateTempQty(pos.id, pos.qty, 'up');
-                        }}
-                        style={{ color: '#cfcfcf', background: '#1b1b1b', border: '1px solid #444', borderRadius: '2px', cursor: 'pointer', fontSize: '9px', lineHeight: 1, padding: '1px 3px' }}
-                      >
-                        â–²
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateTempQty(pos.id, pos.qty, 'down');
-                        }}
-                        style={{ color: '#cfcfcf', background: '#1b1b1b', border: '1px solid #444', borderRadius: '2px', cursor: 'pointer', fontSize: '9px', lineHeight: 1, padding: '1px 3px' }}
-                      >
-                        â–¼
-                      </button>
-                    </div>
-                  )}
-                </td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.iv.toFixed(1)}%</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.mark.toFixed(2)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px', color: pos.markChng >= 0 ? '#22c55e' : '#ef4444' }}>{pos.markChng >= 0 ? '+' : ''}{pos.markChng.toFixed(2)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.tradePrice.toFixed(2)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.high.toFixed(2)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.low.toFixed(2)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px', color: pos.plOpen >= 0 ? '#22c55e' : '#ef4444' }}>{pos.plOpen >= 0 ? '+' : ''}{pos.plOpen.toFixed(0)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.cost.toFixed(0)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px', fontWeight: 600 }}>{pos.netLiq.toFixed(0)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.bpEffect.toFixed(0)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.intVal.toFixed(0)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.dte}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.exDate}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.theta.toFixed(1)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.delta.toFixed(2)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 5px' }}>{pos.gamma.toFixed(3)}</td>
-                <td style={{ padding: '8px 5px' }}>{pos.sector}</td>
-                <td style={{ padding: '8px 5px' }}>{pos.industry}</td>
-                <td style={{ padding: '8px 5px' }}>{pos.subIndustry}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                {formatSigned(totals.plOpen, 0)}
+              </td>
+
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.netLiq, 0)}</td>
+              <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.bpEffect, 0)}</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.theta, 2)}</td>
+              <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.delta, 2)}</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
