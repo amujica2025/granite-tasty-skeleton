@@ -1949,11 +1949,10 @@ export default function App() {
         </div>
       </div>
 
-      {isJournalOpen ? <JournalPopup onClose={() => setIsJournalOpen(false)} /> : null}
+      <JournalPopup onClose={() => setIsJournalOpen(false)} />
 
       <ArtifactModal store={artifactStore} />
     </>
   );
 }
-
 

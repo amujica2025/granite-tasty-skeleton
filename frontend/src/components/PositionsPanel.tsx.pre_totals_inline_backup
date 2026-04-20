@@ -316,10 +316,10 @@ export default function PositionsPanel() {
         >
           <thead
             style={{
-              position: 'static',
+              position: 'sticky',
               top: 0,
               background: '#090909',
-              
+              zIndex: 10,
             }}
           >
             <tr style={{ borderBottom: '1px solid #1b1b1b' }}>
@@ -338,9 +338,9 @@ export default function PositionsPanel() {
               <th style={HEADER_CELL_RIGHT}>IntVal</th>
               <th style={HEADER_CELL_RIGHT}>DTE</th>
               <th style={HEADER_CELL_RIGHT}>Ex Date</th>
-              <th style={HEADER_CELL_RIGHT}>Theta (ÃŽËœ)</th>
-              <th style={HEADER_CELL_RIGHT}>Delta (ÃŽâ€)</th>
-              <th style={HEADER_CELL_RIGHT}>Gamma (ÃŽâ€œ)</th>
+              <th style={HEADER_CELL_RIGHT}>Theta (Î˜)</th>
+              <th style={HEADER_CELL_RIGHT}>Delta (Î”)</th>
+              <th style={HEADER_CELL_RIGHT}>Gamma (Î“)</th>
               <th style={HEADER_CELL_LEFT}>Sector</th>
               <th style={HEADER_CELL_LEFT}>Industry</th>
               <th style={HEADER_CELL_LEFT}>Sub-Ind</th>
@@ -359,8 +359,8 @@ export default function PositionsPanel() {
 
               const canMoveTowardActual = displayQty !== pos.qty;
 
-              const towardActualArrow = pos.qty > 0 ? 'â–²' : 'â–¼';
-              const towardZeroArrow = pos.qty > 0 ? 'â–¼' : 'â–²';
+              const towardActualArrow = pos.qty > 0 ? '▲' : '▼';
+              const towardZeroArrow = pos.qty > 0 ? '▼' : '▲';
 
               return (
                 <tr
@@ -512,36 +512,7 @@ export default function PositionsPanel() {
                 </tr>
               );
             })}
-                        <tr>
-                <td style={FOOTER_CELL_LEFT}>TOTALS</td>
-                <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.netQty, 0)}</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td
-                  style={{
-                    ...FOOTER_CELL_RIGHT,
-                    color: totals.plOpen >= 0 ? '#22c55e' : '#ef4444',
-                  }}
-                >
-                  {formatSigned(totals.plOpen, 0)}
-                </td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.netLiq, 0)}</td>
-                <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.bpEffect, 0)}</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.theta, 2)}</td>
-                <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.delta, 2)}</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-              </tr>
-            </tbody>
+          </tbody>
         </table>
       </div>
 
@@ -549,9 +520,9 @@ export default function PositionsPanel() {
         style={{
           borderTop: '1px solid #1f1f1f',
           background: '#0b0b0b',
-          position: 'static',
-          
-          
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 12,
           overflowX: 'auto',
           overflowY: 'hidden',
         }}
@@ -568,12 +539,12 @@ export default function PositionsPanel() {
             <tr style={{ borderTop: '1px solid #202020' }}>
               <td style={FOOTER_CELL_LEFT}>TOTALS</td>
               <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.netQty, 0)}</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
 
               <td
                 style={{
@@ -584,52 +555,22 @@ export default function PositionsPanel() {
                 {formatSigned(totals.plOpen, 0)}
               </td>
 
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
               <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.netLiq, 0)}</td>
               <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.bpEffect, 0)}</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
               <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.theta, 2)}</td>
               <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.delta, 2)}</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
-              <td style={FOOTER_CELL_RIGHT}>â€”</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
+              <td style={FOOTER_CELL_RIGHT}>—</td>
             </tr>
-                        <tr>
-                <td style={FOOTER_CELL_LEFT}>TOTALS</td>
-                <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.netQty, 0)}</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td
-                  style={{
-                    ...FOOTER_CELL_RIGHT,
-                    color: totals.plOpen >= 0 ? '#22c55e' : '#ef4444',
-                  }}
-                >
-                  {formatSigned(totals.plOpen, 0)}
-                </td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.netLiq, 0)}</td>
-                <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.bpEffect, 0)}</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.theta, 2)}</td>
-                <td style={FOOTER_CELL_RIGHT}>{formatPlain(totals.delta, 2)}</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-                <td style={FOOTER_CELL_RIGHT}>—</td>
-              </tr>
-            </tbody>
+          </tbody>
         </table>
       </div>
     </div>
   );
 }
-
