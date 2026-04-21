@@ -1,0 +1,2 @@
+import type { Artifact } from './useArtifactStore';
+export default function ArtifactRail({ artifacts, activeArtifactId, onSelect }: { artifacts: Artifact[]; activeArtifactId?: string | null; onSelect: (id: string) => void; }) {return <div>{artifacts.map((a,i)=><button key={i} onClick={()=>onSelect(String(i))} style={{fontWeight:String(i)===activeArtifactId?'bold':'normal'}}>{a.symbol}</button>)}</div>;}
