@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <body style="background:#111;color:#eee;font-family:Arial;padding:16px">
+    <h2>WS Market Test</h2>
+    <pre id="out"></pre>
+
+    <script>
+      const out = document.getElementById("out");
+
+      const ws = new WebSocket("ws://127.0.0.1:8000/ws/market");
+
+      ws.onopen = () => {
+        out.textContent += "CONNECTED\n";
+      };
+
+      ws.onmessage = (event) => {
+        out.textContent = event.data + "\n" + out.textContent.slice(0, 5000);
+      };
+
+      ws.onclose = () => {
+        out.textContent += "\nCLOSED\n";
+      };
+
+      ws.onerror = (e) => {
+        out.textContent += "\nERROR\n";
+        console.error(e);
+      };
+    </script>
+  </body>
+</html>

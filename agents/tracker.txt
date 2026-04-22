@@ -1,0 +1,9 @@
+scanners = in progress pass 2 
+
+watchlists = in progress pass 1
+
+positions = not submitted
+
+artifacts = in progress pass 2 
+
+journals = in progress pass 1
